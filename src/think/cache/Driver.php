@@ -1,13 +1,14 @@
 <?php
 // +----------------------------------------------------------------------
-// | ThinkPHP [ WE CAN DO IT JUST THINK ]
+// | Copyright (c) 2019  http://www.sycit.cn
 // +----------------------------------------------------------------------
-// | Copyright (c) 2006~2019 http://thinkphp.cn All rights reserved.
+// | Author: Peter.Zhang  <hyzwd@outlook.com>
 // +----------------------------------------------------------------------
-// | Licensed ( http://www.apache.org/licenses/LICENSE-2.0 )
+// | Date:   2019/9/18
 // +----------------------------------------------------------------------
-// | Author: liu21st <liu21st@gmail.com>
+// | Title:  Driver.php
 // +----------------------------------------------------------------------
+
 declare (strict_types = 1);
 
 namespace think\cache;
@@ -19,12 +20,8 @@ use DateTimeInterface;
 use Exception;
 use Psr\SimpleCache\CacheInterface;
 use think\contract\CacheHandlerInterface;
-use think\exception\InvalidArgumentException;
-use throwable;
+use Throwable;
 
-/**
- * 缓存基础类
- */
 abstract class Driver implements CacheInterface, CacheHandlerInterface
 {
     /**
@@ -69,8 +66,8 @@ abstract class Driver implements CacheInterface, CacheHandlerInterface
             $expire = $expire->getTimestamp() - time();
         } elseif ($expire instanceof DateInterval) {
             $expire = DateTime::createFromFormat('U', (string) time())
-                ->add($expire)
-                ->format('U') - time();
+                    ->add($expire)
+                    ->format('U') - time();
         }
 
         return (int) $expire;
@@ -92,6 +89,7 @@ abstract class Driver implements CacheInterface, CacheHandlerInterface
      * @access public
      * @param string $name 缓存变量名
      * @return mixed
+     * @throws \Psr\SimpleCache\InvalidArgumentException
      */
     public function pull(string $name)
     {
@@ -106,16 +104,17 @@ abstract class Driver implements CacheInterface, CacheHandlerInterface
     /**
      * 追加（数组）缓存
      * @access public
-     * @param string $name  缓存变量名
-     * @param mixed  $value 存储数据
+     * @param string $name 缓存变量名
+     * @param mixed $value 存储数据
      * @return void
+     * @throws \Psr\SimpleCache\InvalidArgumentException
      */
     public function push(string $name, $value): void
     {
         $item = $this->get($name, []);
 
         if (!is_array($item)) {
-            throw new InvalidArgumentException('only array cache can be push');
+            throw new \InvalidArgumentException('only array cache can be push');
         }
 
         $item[] = $value;
@@ -132,10 +131,11 @@ abstract class Driver implements CacheInterface, CacheHandlerInterface
     /**
      * 如果不存在则写入缓存
      * @access public
-     * @param string $name   缓存变量名
-     * @param mixed  $value  存储数据
-     * @param int    $expire 有效时间 0为永久
+     * @param string $name 缓存变量名
+     * @param mixed $value 存储数据
+     * @param int $expire 有效时间 0为永久
      * @return mixed
+     * @throws Throwable|\Psr\SimpleCache\InvalidArgumentException
      */
     public function remember(string $name, $value, $expire = null)
     {
@@ -164,7 +164,7 @@ abstract class Driver implements CacheInterface, CacheHandlerInterface
 
             // 解锁
             $this->delete($name . '_lock');
-        } catch (Exception | throwable $e) {
+        } catch (Exception | Throwable $e) {
             $this->delete($name . '_lock');
             throw $e;
         }
@@ -198,6 +198,7 @@ abstract class Driver implements CacheInterface, CacheHandlerInterface
      * @access public
      * @param string $tag 标签标识
      * @return array
+     * @throws \Psr\SimpleCache\InvalidArgumentException
      */
     public function getTagItems(string $tag): array
     {
@@ -283,10 +284,10 @@ abstract class Driver implements CacheInterface, CacheHandlerInterface
     /**
      * 读取缓存
      * @access public
-     * @param iterable $keys    缓存变量名
-     * @param mixed    $default 默认值
+     * @param iterable $keys 缓存变量名
+     * @param mixed $default 默认值
      * @return iterable
-     * @throws InvalidArgumentException
+     * @throws \Psr\SimpleCache\InvalidArgumentException
      */
     public function getMultiple($keys, $default = null): iterable
     {
@@ -302,9 +303,10 @@ abstract class Driver implements CacheInterface, CacheHandlerInterface
     /**
      * 写入缓存
      * @access public
-     * @param iterable               $values 缓存数据
-     * @param null|int|\DateInterval $ttl    有效时间 0为永久
+     * @param iterable $values 缓存数据
+     * @param null|int|\DateInterval $ttl 有效时间 0为永久
      * @return bool
+     * @throws \Psr\SimpleCache\InvalidArgumentException
      */
     public function setMultiple($values, $ttl = null): bool
     {
@@ -324,7 +326,6 @@ abstract class Driver implements CacheInterface, CacheHandlerInterface
      * @access public
      * @param iterable $keys 缓存变量名
      * @return bool
-     * @throws InvalidArgumentException
      * @throws \Psr\SimpleCache\InvalidArgumentException
      */
     public function deleteMultiple($keys): bool

@@ -4,7 +4,7 @@
 // +----------------------------------------------------------------------
 // | Author: Peter.Zhang  <hyzwd@outlook.com>
 // +----------------------------------------------------------------------
-// | Date:   2019/8/10
+// | Date:   2019/9/18
 // +----------------------------------------------------------------------
 // | Title:  Event.php
 // +----------------------------------------------------------------------
@@ -13,22 +13,23 @@ declare (strict_types = 1);
 
 namespace think;
 
+use ReflectionClass;
+use ReflectionException;
+use ReflectionMethod;
+use think\exception\ServerException;
+
 /**
  * 事件管理类
+ * Class Event
+ * @package think
  */
 class Event
 {
     /**
-     * 监听者
-     * @var array
+     * 应用对象
+     * @var App
      */
-    protected $listener = [];
-
-    /**
-     * 观察者
-     * @var array
-     */
-    protected $observer = [];
+    protected $app;
 
     /**
      * 事件别名
@@ -38,21 +39,20 @@ class Event
         'AppInit'     => event\AppInit::class,
         'HttpRun'     => event\HttpRun::class,
         'HttpEnd'     => event\HttpEnd::class,
-        'RouteLoaded' => event\RouteLoaded::class,
         'LogWrite'    => event\LogWrite::class,
     ];
+
+    /**
+     * 监听者
+     * @var array
+     */
+    protected $listener = [];
 
     /**
      * 是否需要事件响应
      * @var bool
      */
     protected $withEvent = true;
-
-    /**
-     * 应用对象
-     * @var App
-     */
-    protected $app;
 
     public function __construct(App $app)
     {
@@ -62,7 +62,7 @@ class Event
     /**
      * 设置是否开启事件响应
      * @access protected
-     * @param  bool $event 是否需要事件响应
+     * @param bool $event 是否需要事件响应
      * @return $this
      */
     public function withEvent(bool $event)
@@ -74,7 +74,7 @@ class Event
     /**
      * 批量注册事件监听
      * @access public
-     * @param  array $events 事件定义
+     * @param array $events 事件定义
      * @return $this
      */
     public function listenEvents(array $events)
@@ -97,9 +97,9 @@ class Event
     /**
      * 注册事件监听
      * @access public
-     * @param  string $event    事件名称
-     * @param  mixed  $listener 监听操作（或者类名）
-     * @param  bool   $first    是否优先执行
+     * @param string $event    事件名称
+     * @param mixed  $listener 监听操作（或者类名）
+     * @param bool   $first    是否优先执行
      * @return $this
      */
     public function listen(string $event, $listener, bool $first = false)
@@ -124,10 +124,10 @@ class Event
     /**
      * 是否存在事件监听
      * @access public
-     * @param  string $event 事件名称
+     * @param string $event 事件名称
      * @return bool
      */
-    public function hasListen(string $event): bool
+    public function hasListener(string $event): bool
     {
         if (isset($this->bind[$event])) {
             $event = $this->bind[$event];
@@ -154,7 +154,7 @@ class Event
     /**
      * 指定事件别名标识 便于调用
      * @access public
-     * @param  array $events 事件别名
+     * @param array $events 事件别名
      * @return $this
      */
     public function bind(array $events)
@@ -167,8 +167,8 @@ class Event
     /**
      * 注册事件订阅者
      * @access public
-     * @param  mixed $subscriber 订阅者
-     * @param  array $events     事件列表
+     * @param mixed $subscriber 订阅者
+     * @param array $events     事件列表
      * @return $this
      */
     public function subscribe($subscriber, array $events = [])
@@ -199,8 +199,8 @@ class Event
     /**
      * 自动注册事件观察者
      * @access public
-     * @param  string|object $observer 观察者
-     * @param  array         $events   事件列表
+     * @param string|object $observer 观察者
+     * @param array $events 事件列表
      * @return $this
      */
     public function observe($observer, array $events = [])
@@ -213,14 +213,28 @@ class Event
             $observer = $this->app->make($observer);
         }
 
-        $events = $events ?: array_keys($this->listener);
+        if (!empty($events)) {
+            foreach ($events as $event) {
+                $name   = false !== strpos($event, '\\') ? substr(strrchr($event, '\\'), 1) : $event;
+                $method = 'on' . $name;
 
-        foreach ($events as $event) {
-            $name   = false !== strpos($event, '\\') ? substr(strrchr($event, '\\'), 1) : $event;
-            $method = 'on' . $name;
+                if (method_exists($observer, $method)) {
+                    $this->listen($event, [$observer, $method]);
+                }
+            }
+        } else {
+            try {
+                $reflect = new ReflectionClass($observer);
+                $methods = $reflect->getMethods(ReflectionMethod::IS_PUBLIC);
 
-            if (method_exists($observer, $method)) {
-                $this->listen($event, [$observer, $method]);
+                foreach ($methods as $method) {
+                    $name = $method->getName();
+                    if (0 === strpos($name, 'on')) {
+                        $this->listen(substr($name, 2), [$observer, $name]);
+                    }
+                }
+            } catch (ReflectionException $e) {
+                throw new ServerException(404, 'event observe error', $e, 500);
             }
         }
 
@@ -230,15 +244,15 @@ class Event
     /**
      * 触发事件
      * @access public
-     * @param  string|object $event  事件名称
-     * @param  mixed         $params 传入参数
-     * @param  bool          $once   只获取一个有效返回值
+     * @param string|object $event  事件名称
+     * @param mixed         $params 传入参数
+     * @param bool          $once   只获取一个有效返回值
      * @return mixed
      */
     public function trigger($event, $params = null, bool $once = false)
     {
         if (!$this->withEvent) {
-            return null;
+            return false;
         }
 
         if (is_object($event)) {
@@ -265,10 +279,21 @@ class Event
     }
 
     /**
+     * 触发事件(只获取一个有效返回值)
+     * @param      $event
+     * @param null $params
+     * @return mixed
+     */
+    public function until($event, $params = null)
+    {
+        return $this->trigger($event, $params, true);
+    }
+
+    /**
      * 执行事件调度
      * @access protected
-     * @param  mixed $event  事件方法
-     * @param  mixed $params 参数
+     * @param mixed $event  事件方法
+     * @param mixed $params 参数
      * @return mixed
      */
     protected function dispatch($event, $params = null)

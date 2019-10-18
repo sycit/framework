@@ -1,13 +1,14 @@
 <?php
 // +----------------------------------------------------------------------
-// | ThinkPHP [ WE CAN DO IT JUST THINK ]
+// | Copyright (c) 2019  http://www.sycit.cn
 // +----------------------------------------------------------------------
-// | Copyright (c) 2006~2019 http://thinkphp.cn All rights reserved.
+// | Author: Peter.Zhang  <hyzwd@outlook.com>
 // +----------------------------------------------------------------------
-// | Licensed ( http://www.apache.org/licenses/LICENSE-2.0 )
+// | Date:   2019/9/18
 // +----------------------------------------------------------------------
-// | Author: yunwuxin <448901948@qq.com>
+// | Title:  Channel.php
 // +----------------------------------------------------------------------
+
 declare (strict_types = 1);
 
 namespace think\log;
@@ -17,6 +18,10 @@ use think\contract\LogHandlerInterface;
 use think\Event;
 use think\event\LogWrite;
 
+/**
+ * Class Channel
+ * @package think\log
+ */
 class Channel implements LoggerInterface
 {
     protected $name;

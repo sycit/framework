@@ -1,13 +1,14 @@
 <?php
 // +----------------------------------------------------------------------
-// | ThinkPHP [ WE CAN DO IT JUST THINK ]
+// | Copyright (c) 2019  http://www.sycit.cn
 // +----------------------------------------------------------------------
-// | Copyright (c) 2006~2019 http://thinkphp.cn All rights reserved.
+// | Author: Peter.Zhang  <hyzwd@outlook.com>
 // +----------------------------------------------------------------------
-// | Licensed ( http://www.apache.org/licenses/LICENSE-2.0 )
+// | Date:   2019/9/18
 // +----------------------------------------------------------------------
-// | Author: 麦当苗儿 <zuojiazi@vip.qq.com> <http://zjzit.cn>
+// | Title:  Error.php
 // +----------------------------------------------------------------------
+
 declare (strict_types = 1);
 
 namespace think\initializer;
@@ -20,6 +21,8 @@ use Throwable;
 
 /**
  * 错误和异常处理
+ * Class Error
+ * @package think\initializer
  */
 class Error
 {
@@ -42,9 +45,9 @@ class Error
     }
 
     /**
-     * Exception Handler
+     * 自定义异常 输出
      * @access public
-     * @param \Throwable $e
+     * @param Throwable $e
      */
     public function appException(Throwable $e): void
     {
@@ -52,15 +55,14 @@ class Error
 
         $handler->report($e);
 
+        // 命令行 输出
         if ($this->app->runningInConsole()) {
             $handler->renderForConsole(new ConsoleOutput, $e);
-        } else {
-            $handler->render($e)->setCookie($this->app->cookie)->send();
         }
     }
 
     /**
-     * Error Handler 致命错误异常
+     * Error Handler
      * @access public
      * @param integer $errno 错误编号
      * @param string $errstr 详细错误信息
@@ -73,20 +75,21 @@ class Error
         $exception = new ErrorException($errno, $errstr, $errfile, $errline);
 
         if (error_reporting() & $errno) {
-            // 将错误信息托管至 think\Exception
+            // 将错误信息托管至 think\exception\ErrorException
             throw $exception;
         }
     }
 
     /**
-     * Shutdown Handler 普通错误异常
+     * Shutdown Handler
      * @access public
      */
     public function appShutdown(): void
     {
         if (!is_null($error = error_get_last()) && $this->isFatal($error['type'])) {
-            // 将错误信息托管至\think\Exception
+            // 将错误信息托管至think\exception\ErrorException
             $exception = new ErrorException($error['type'], $error['message'], $error['file'], $error['line']);
+
             $this->appException($exception);
         }
     }

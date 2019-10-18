@@ -1,19 +1,22 @@
 <?php
 // +----------------------------------------------------------------------
-// | ThinkPHP [ WE CAN DO IT JUST THINK IT ]
+// | Copyright (c) 2019  http://www.sycit.cn
 // +----------------------------------------------------------------------
-// | Copyright (c) 2006-2016 http://thinkphp.cn All rights reserved.
+// | Author: Peter.Zhang  <hyzwd@outlook.com>
 // +----------------------------------------------------------------------
-// | Licensed ( http://www.apache.org/licenses/LICENSE-2.0 )
+// | Date:   2019/9/18
 // +----------------------------------------------------------------------
-// | Author: liu21st <liu21st@gmail.com>
+// | Title:  LogHandlerInterface.php
 // +----------------------------------------------------------------------
+
 declare (strict_types = 1);
 
 namespace think\contract;
 
 /**
  * 日志驱动接口
+ * Interface LogHandlerInterface
+ * @package think\contract
  */
 interface LogHandlerInterface
 {
@@ -24,5 +27,4 @@ interface LogHandlerInterface
      * @return bool
      */
     public function save(array $log): bool;
-
 }

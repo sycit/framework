@@ -4,9 +4,9 @@
 // +----------------------------------------------------------------------
 // | Author: Peter.Zhang  <hyzwd@outlook.com>
 // +----------------------------------------------------------------------
-// | Date:   2019/8/31
+// | Date:   2019/9/19
 // +----------------------------------------------------------------------
-// | Title:  DevelopDeBug.php
+// | Title:  DevelopDebug.php
 // +----------------------------------------------------------------------
 
 declare (strict_types = 1);
@@ -19,14 +19,14 @@ use think\Config;
 use think\event\LogWrite;
 use think\Request;
 use think\Response;
-use think\response\Redirect;
 
 /**
  * 开发者调试中间件
+ * Class DevelopDebug
+ * @package think\middleware
  */
 class DevelopDebug
 {
-
     /**
      * Trace日志
      * @var array
@@ -42,10 +42,10 @@ class DevelopDebug
     /** @var App */
     protected $app;
 
-    public function __construct(App $app, Config $config)
+    public function __construct(App $app)
     {
         $this->app    = $app;
-        $this->config = array_merge($this->config, $config->get('trace'));
+        $this->config = array_merge($this->config, $app->getReadsConfig('trace'));
     }
 
     /**
@@ -83,18 +83,17 @@ class DevelopDebug
     public function traceDebug(Response $response, &$data)
     {
         $config = $this->config;
-        $type   = isset($config['type']) ? $config['type'] : 'Json';
+        $type   = !empty($config['type']) ? $config['type'] : 'Json';
 
         unset($config['type']);
 
-        $trace = App::factory($type, '\\think\\debug\\', $config);
+        // 命名空间
+        $namespace  = false !== strpos($type, '\\') ? $type : '\\think\\debug\\';
 
-        if ($response instanceof Redirect) {
-            //TODO 记录
-        } else {
-            $log  = $this->app->log->getLog($config['channel'] ?? '');
-            $log  = array_merge_recursive($this->log, $log);
-            $data = $trace->output($this->app, $response, $log);
-        }
+        $trace = App::factory($type, $namespace, $config);
+
+        $log  = $this->app->log->getLog($config['channel'] ?? '');
+        $log  = array_merge_recursive($this->log, $log);
+        $data = $trace->output($this->app, $response, $log);
     }
 }

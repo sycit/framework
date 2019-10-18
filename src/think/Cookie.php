@@ -4,7 +4,7 @@
 // +----------------------------------------------------------------------
 // | Author: Peter.Zhang  <hyzwd@outlook.com>
 // +----------------------------------------------------------------------
-// | Date:   2019/8/10
+// | Date:   2019/9/18
 // +----------------------------------------------------------------------
 // | Title:  Cookie.php
 // +----------------------------------------------------------------------
@@ -16,7 +16,9 @@ namespace think;
 use DateTimeInterface;
 
 /**
- * Cookie管理类
+ * Cookie 管理类
+ * Class Cookie
+ * @package think
  */
 class Cookie
 {
@@ -26,15 +28,17 @@ class Cookie
      */
     protected $config = [
         // cookie 保存时间
-        'expire'   => 0,
+        'expire'    => 0,
         // cookie 保存路径
-        'path'     => '/',
+        'path'      => '/',
         // cookie 有效域名
-        'domain'   => '',
+        'domain'    => '',
         //  cookie 启用安全传输
-        'secure'   => false,
+        'secure'    => false,
         // httponly设置
-        'httponly' => false,
+        'httponly'  => false,
+        // 是否使用 setcookie
+        'setcookie' => true,
     ];
 
     /**
@@ -51,9 +55,6 @@ class Cookie
 
     /**
      * 构造方法
-     * @param Request $request
-     * @param         $config
-     * @access public
      */
     public function __construct(Request $request, array $config = [])
     {
@@ -61,9 +62,28 @@ class Cookie
         $this->config  = array_merge($this->config, array_change_key_case($config));
     }
 
-    public static function __make(Request $request, Config $config)
+    public static function __make(Request $request, App $app)
     {
-        return new static($request, $config->get('cookie'));
+        return new static($request, $app->getReadsConfig('cookie'));
+    }
+
+    /**
+     * 读取配置
+     * @param string $name
+     * @param null $default
+     * @return array|mixed|null
+     */
+    public function config(string $name = '', $default = null)
+    {
+        if ('' == $name) {
+            return $this->config;
+        }
+
+        if (isset($this->config[$name])) {
+            return $this->config[$name];
+        }
+
+        return $default;
     }
 
     /**
@@ -86,7 +106,8 @@ class Cookie
      */
     public function has(string $name): bool
     {
-        return $this->request->has($name, 'cookie');
+        $cookie = $this->request->cookie($name);
+        return empty($cookie) ? false : true;
     }
 
     /**

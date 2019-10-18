@@ -4,7 +4,7 @@
 // +----------------------------------------------------------------------
 // | Author: Peter.Zhang  <hyzwd@outlook.com>
 // +----------------------------------------------------------------------
-// | Date:   2019/8/10
+// | Date:   2019/9/18
 // +----------------------------------------------------------------------
 // | Title:  Http.php
 // +----------------------------------------------------------------------
@@ -14,13 +14,14 @@ declare (strict_types = 1);
 namespace think;
 
 use Closure;
-use think\event\RouteLoaded;
-use think\exception\Handle;
 use think\exception\ApiException;
+use think\exception\Handle;
 use Throwable;
 
 /**
- * Web应用管理类
+ * 应用管理类
+ * Class Http
+ * @package think
  */
 class Http
 {
@@ -49,18 +50,24 @@ class Http
 
     /**
      * 是否域名绑定应用
-     * @var string|bool
+     * @var bool
      */
     protected $bindDomain = false;
 
-    /**
-     * 构造函数
-     * @param App $app
-     */
     public function __construct(App $app)
     {
         $this->app   = $app;
         $this->multi = is_dir($this->app->getBasePath() . 'controller') ? false : true;
+    }
+
+    /**
+     * 是否域名绑定应用
+     * @access public
+     * @return bool
+     */
+    public function isBindDomain(): bool
+    {
+        return $this->bindDomain;
     }
 
     /**
@@ -140,28 +147,10 @@ class Http
         } catch (Throwable $e) {
             $this->reportException($e);
 
-            $response = $this->renderException($e);
+            $response = $this->renderException($request, $e);
         }
 
         return $response->setCookie($this->app->cookie);
-    }
-
-    /**
-     * HttpEnd
-     * @param Response $response
-     * @return void
-     */
-    public function end(Response $response): void
-    {
-        $this->app->event->trigger('HttpEnd', $response);
-
-        // 写入日志
-        $this->app->log->save();
-
-        if ($this->app->has('session')) {
-            // 写入Session
-            $this->app->session->save();
-        }
     }
 
     /**
@@ -184,9 +173,7 @@ class Http
         $this->initialize();
 
         // 加载全局中间件
-        if (is_file($this->app->getBasePath() . 'middleware.php')) {
-            $this->app->middleware->import(include $this->app->getBasePath() . 'middleware.php');
-        }
+        $this->loadMiddleware();
 
         $autoMulti = $this->app->config->get('app.auto_multi_app', false);
 
@@ -201,11 +188,87 @@ class Http
         // 监听HttpRun
         $this->app->event->trigger('HttpRun');
 
-        $withRoute = function () {
+        return $this->dispatchToRoute($request);
+    }
+
+    /**
+     * 路由调度
+     * @param $request
+     * @return mixed
+     */
+    protected function dispatchToRoute($request)
+    {
+        $withRoute = $this->app->config->get('app.with_route', true) ? function () {
             $this->loadRoutes();
-        };
+        } : null;
 
         return $this->app->route->dispatch($request, $withRoute);
+    }
+
+    /**
+     * 加载全局中间件
+     */
+    protected function loadMiddleware(): void
+    {
+
+        if (is_file($this->app->getBasePath() . 'middleware.php')) {
+            $this->app->middleware->import(include $this->app->getBasePath() . 'middleware.php');
+        }
+    }
+
+    /**
+     * 加载路由
+     * @access protected
+     * @return void
+     */
+    protected function loadRoutes(): void
+    {
+        if ($this->bindDomain) {
+            // 加载路由定义
+            $paths = $this->getRoutePath() . $this->getName() . '.php';
+
+            $this->app->route->setBind(is_file($paths) ? include $paths : []);
+        }
+    }
+
+    /**
+     * Report the exception to the exception handler.
+     *
+     * @param Throwable $e
+     * @return void
+     */
+    protected function reportException(Throwable $e)
+    {
+        $this->app->make(Handle::class)->report($e);
+    }
+
+    /**
+     * Render the exception to a response.
+     *
+     * @param Request   $request
+     * @param Throwable $e
+     * @return Response
+     */
+    protected function renderException($request, Throwable $e)
+    {
+        return $this->app->make(Handle::class)->render($request, $e);
+    }
+
+    /**
+     * 获取当前运行入口名称
+     * @access protected
+     * @codeCoverageIgnore
+     * @return string
+     */
+    protected function getScriptName(): string
+    {
+        if (isset($_SERVER['SCRIPT_FILENAME'])) {
+            $file = $_SERVER['SCRIPT_FILENAME'];
+        } elseif (isset($_SERVER['argv'][0])) {
+            $file = realpath($_SERVER['argv'][0]);
+        }
+
+        return isset($file) ? pathinfo($file, PATHINFO_FILENAME) : '';
     }
 
     /**
@@ -232,7 +295,7 @@ class Http
                 } elseif (isset($bind[$subDomain])) {
                     $appName          = $bind[$subDomain];
                     $this->bindDomain = true;
-                } elseif ('www' != $subDomain && isset($bind['*'])) {
+                } elseif (isset($bind['*'])) {
                     $appName          = $bind['*'];
                     $this->bindDomain = true;
                 }
@@ -268,24 +331,25 @@ class Http
             $appName = $this->name ?: $this->getScriptName();
         }
 
-        $this->loadApp(!empty($appName) ? $appName : $this->app->config->get('app.default_app', 'index'));
+        $this->setApp(!empty($appName) ? $appName : $this->app->config->get('app.default_app', 'index'));
     }
 
     /**
-     * 获取当前运行入口名称
-     * @access protected
-     * @codeCoverageIgnore
-     * @return string
+     * 设置应用
+     * @param string $appName
      */
-    protected function getScriptName(): string
+    protected function setApp(string $appName): void
     {
-        if (isset($_SERVER['SCRIPT_FILENAME'])) {
-            $file = $_SERVER['SCRIPT_FILENAME'];
-        } elseif (isset($_SERVER['argv'][0])) {
-            $file = realpath($_SERVER['argv'][0]);
-        }
+        $this->name = $appName;
+        $this->app->request->setApp($appName);
+        $this->app->setAppPath($this->path ?: $this->app->getBasePath() . $appName . DIRECTORY_SEPARATOR);
+        $this->app->setRuntimePath($this->app->getRootPath() . 'runtime' . DIRECTORY_SEPARATOR . $appName . DIRECTORY_SEPARATOR);
 
-        return isset($file) ? pathinfo($file, PATHINFO_FILENAME) : '';
+        // 设置应用命名空间
+        $this->app->setNamespace($this->app->config->get('app.app_namespace') ?: 'app\\' . $appName);
+
+        //加载应用
+        $this->loadApp($appName);
     }
 
     /**
@@ -295,17 +359,12 @@ class Http
      */
     protected function loadApp(string $appName): void
     {
-        $this->name = $appName;
-        $this->app->request->setApp($appName);
-        $this->app->setAppPath($this->path ?: $this->app->getBasePath() . $appName . DIRECTORY_SEPARATOR);
-        $this->app->setRuntimePath($this->app->getRootPath() . 'runtime' . DIRECTORY_SEPARATOR . $appName . DIRECTORY_SEPARATOR);
-
         //加载app文件
         if (is_dir($this->app->getAppPath())) {
             $appPath = $this->app->getAppPath();
 
             if (is_file($appPath . 'common.php')) {
-                include_once $appPath . "common.php";
+                include_once $appPath . 'common.php';
             }
 
             $configPath = $this->app->getConfigPath();
@@ -334,27 +393,22 @@ class Http
                 $this->app->bind(include $appPath . 'provider.php');
             }
         }
-
-        // 设置应用命名空间
-        $this->app->setNamespace('app\\' . $appName);
     }
 
     /**
-     * 加载路由
-     * @access protected
+     * HttpEnd
+     * @param Response $response
      * @return void
      */
-    protected function loadRoutes(): void
+    public function end(Response $response): void
     {
-        if ($this->bindDomain) {
-            // 加载路由定义
-            $paths = $this->getRoutePath() . $this->getName() . '.php';
+        $this->app->event->trigger('HttpEnd', $response);
 
-            $this->app->route->bindDomain(is_file($paths) ? include $paths : []);
-        }
+        //执行中间件
+        $this->app->middleware->end($response);
 
-        // 触发路由事件
-        $this->app->event->trigger(RouteLoaded::class);
+        // 写入日志
+        $this->app->log->save();
     }
 
     /**
@@ -365,26 +419,5 @@ class Http
     protected function getRoutePath(): string
     {
         return $this->app->getRootPath() . 'route' . DIRECTORY_SEPARATOR;
-    }
-
-    /**
-     * Report the exception to the exception handler.
-     * @param Throwable $e
-     * @author Peter.Zhang
-     */
-    protected function reportException(Throwable $e)
-    {
-        $this->app->make(Handle::class)->report($e);
-    }
-
-    /**
-     * Render the exception to a response.
-     * @param Throwable $e
-     * @return Response
-     * @author Peter.Zhang
-     */
-    protected function renderException(Throwable $e)
-    {
-        return $this->app->make(Handle::class)->render($e);
     }
 }

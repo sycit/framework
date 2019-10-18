@@ -4,7 +4,7 @@
 // +----------------------------------------------------------------------
 // | Author: Peter.Zhang  <hyzwd@outlook.com>
 // +----------------------------------------------------------------------
-// | Date:   2019/8/10
+// | Date:   2019/9/18
 // +----------------------------------------------------------------------
 // | Title:  Cache.php
 // +----------------------------------------------------------------------
@@ -16,7 +16,6 @@ namespace think;
 use Psr\SimpleCache\CacheInterface;
 use think\cache\Driver;
 use think\cache\TagSet;
-use think\exception\InvalidArgumentException;
 use think\helper\Arr;
 
 /**
@@ -26,7 +25,6 @@ use think\helper\Arr;
  */
 class Cache extends Manager implements CacheInterface
 {
-
     protected $namespace = '\\think\\cache\\driver\\';
 
     /**
@@ -35,23 +33,12 @@ class Cache extends Manager implements CacheInterface
      */
     public function getDefaultDriver()
     {
-        return $this->getConfig('default');
+        return $this->config('default');
     }
 
-    /**
-     * 获取缓存配置
-     * @access public
-     * @param null|string $name    名称
-     * @param mixed       $default 默认值
-     * @return mixed
-     */
-    public function getConfig(string $name = null, $default = null)
+    public static function __make(App $app)
     {
-        if (!is_null($name)) {
-            return $this->app->config->get('cache.' . $name, $default);
-        }
-
-        return $this->app->config->get('cache');
+        return new static($app, $app->getReadsConfig('cache'));
     }
 
     /**
@@ -63,7 +50,7 @@ class Cache extends Manager implements CacheInterface
      */
     public function getStoreConfig(string $store, string $name = null, $default = null)
     {
-        if ($config = $this->getConfig("stores.{$store}")) {
+        if ($config = $this->config("stores.{$store}")) {
             return Arr::get($config, $name, $default);
         }
 
@@ -143,10 +130,10 @@ class Cache extends Manager implements CacheInterface
     /**
      * 读取缓存
      * @access public
-     * @param iterable $keys    缓存变量名
-     * @param mixed    $default 默认值
+     * @param iterable $keys 缓存变量名
+     * @param mixed $default 默认值
      * @return iterable
-     * @throws InvalidArgumentException
+     * @throws \Psr\SimpleCache\InvalidArgumentException
      */
     public function getMultiple($keys, $default = null): iterable
     {
@@ -156,9 +143,10 @@ class Cache extends Manager implements CacheInterface
     /**
      * 写入缓存
      * @access public
-     * @param iterable               $values 缓存数据
-     * @param null|int|\DateInterval $ttl    有效时间 0为永久
+     * @param iterable $values 缓存数据
+     * @param null|int|\DateInterval $ttl 有效时间 0为永久
      * @return bool
+     * @throws \Psr\SimpleCache\InvalidArgumentException
      */
     public function setMultiple($values, $ttl = null): bool
     {
@@ -170,7 +158,6 @@ class Cache extends Manager implements CacheInterface
      * @access public
      * @param iterable $keys 缓存变量名
      * @return bool
-     * @throws InvalidArgumentException
      * @throws \Psr\SimpleCache\InvalidArgumentException
      */
     public function deleteMultiple($keys): bool

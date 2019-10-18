@@ -17,7 +17,7 @@ use think\console\input\Option;
 class Controller extends Make
 {
 
-    protected $type = "Controller";
+    protected $type = "Dispatch";
 
     protected function configure()
     {
@@ -45,7 +45,7 @@ class Controller extends Make
 
     protected function getClassName(string $name): string
     {
-        return parent::getClassName($name) . ($this->app->config->get('route.controller_suffix') ? 'Controller' : '');
+        return parent::getClassName($name) . ($this->app->config->get('route.controller_suffix') ? 'Dispatch' : '');
     }
 
     protected function getNamespace(string $app): string

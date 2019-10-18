@@ -1,14 +1,15 @@
 <?php
 // +----------------------------------------------------------------------
-// | ThinkPHP [ WE CAN DO IT JUST THINK ]
+// | Copyright (c) 2019  http://www.sycit.cn
 // +----------------------------------------------------------------------
-// | Copyright (c) 2006~2019 http://thinkphp.cn All rights reserved.
+// | Author: Peter.Zhang  <hyzwd@outlook.com>
 // +----------------------------------------------------------------------
-// | Licensed ( http://www.apache.org/licenses/LICENSE-2.0 )
+// | Date:   2019/9/18
 // +----------------------------------------------------------------------
-// | Author: liu21st <liu21st@gmail.com>
+// | Title:  File.php
 // +----------------------------------------------------------------------
-declare (strict_types = 1);
+
+declare(strict_types = 1);
 
 namespace think\cache\driver;
 
@@ -16,9 +17,6 @@ use FilesystemIterator;
 use think\App;
 use think\cache\Driver;
 
-/**
- * 文件缓存类
- */
 class File extends Driver
 {
     /**
@@ -88,7 +86,7 @@ class File extends Driver
         $filename = $this->getCacheKey($name);
 
         if (!is_file($filename)) {
-            return;
+            return null;
         }
 
         $content = @file_get_contents($filename);
@@ -98,7 +96,7 @@ class File extends Driver
             if (0 != $expire && time() > filemtime($filename) + $expire) {
                 //缓存过期删除缓存文件
                 $this->unlink($filename);
-                return;
+                return null;
             }
 
             $content = substr($content, 32);
@@ -300,5 +298,4 @@ class File extends Driver
 
         return true;
     }
-
 }

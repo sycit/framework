@@ -1,11 +1,14 @@
 <?php
 // +----------------------------------------------------------------------
-// | TopThink [ WE CAN DO IT JUST THINK IT ]
+// | Copyright (c) 2019  http://www.sycit.cn
 // +----------------------------------------------------------------------
-// | Copyright (c) 2015 http://www.topthink.com All rights reserved.
+// | Author: Peter.Zhang  <hyzwd@outlook.com>
 // +----------------------------------------------------------------------
-// | Author: zhangyajun <448901948@qq.com>
+// | Date:   2019/9/18
 // +----------------------------------------------------------------------
+// | Title:  Console.php
+// +----------------------------------------------------------------------
+
 declare (strict_types = 1);
 
 namespace think;
@@ -44,10 +47,11 @@ use think\console\output\driver\Buffer;
 
 /**
  * 控制台应用管理类
+ * Class Console
+ * @package think
  */
 class Console
 {
-
     protected $app;
 
     /** @var Command[] */
@@ -166,6 +170,7 @@ class Console
      * @param array $parameters
      * @param string $driver
      * @return Output|Buffer
+     * @throws \Exception
      */
     public function call(string $command, array $parameters = [], string $driver = 'buffer')
     {
@@ -228,9 +233,10 @@ class Console
     /**
      * 执行指令
      * @access public
-     * @param Input  $input
+     * @param Input $input
      * @param Output $output
      * @return int
+     * @throws \Exception
      */
     public function doRun(Input $input, Output $output)
     {
@@ -730,5 +736,4 @@ class Console
 
         return $namespaces;
     }
-
 }

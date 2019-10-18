@@ -1,13 +1,14 @@
 <?php
 // +----------------------------------------------------------------------
-// | ThinkPHP [ WE CAN DO IT JUST THINK ]
+// | Copyright (c) 2019  http://www.sycit.cn
 // +----------------------------------------------------------------------
-// | Copyright (c) 2006~2019 http://thinkphp.cn All rights reserved.
+// | Author: Peter.Zhang  <hyzwd@outlook.com>
 // +----------------------------------------------------------------------
-// | Licensed ( http://www.apache.org/licenses/LICENSE-2.0 )
+// | Date:   2019/9/20
 // +----------------------------------------------------------------------
-// | Author: 麦当苗儿 <zuojiazi@vip.qq.com> <http://zjzit.cn>
+// | Title:  ErrorException.php
 // +----------------------------------------------------------------------
+
 declare (strict_types = 1);
 
 namespace think\exception;
@@ -15,10 +16,9 @@ namespace think\exception;
 use think\Exception;
 
 /**
- * ThinkPHP错误异常
- * 主要用于封装 set_error_handler 和 register_shutdown_function 得到的错误
- * 除开从 think\Exception 继承的功能
- * 其他和PHP系统\ErrorException功能基本一样
+ * 封装 set_error_handler 和 register_shutdown_function 的错误
+ * Class ErrorException
+ * @package think\exception
  */
 class ErrorException extends Exception
 {
@@ -39,10 +39,10 @@ class ErrorException extends Exception
     public function __construct(int $severity, string $message, string $file, int $line)
     {
         $this->severity = $severity;
-        $this->message  = $message;
         $this->file     = $file;
         $this->line     = $line;
-        $this->code     = 0;
+
+        parent::__construct($message, 500);
     }
 
     /**

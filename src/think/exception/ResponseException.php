@@ -1,22 +1,27 @@
 <?php
 // +----------------------------------------------------------------------
-// | ThinkPHP [ WE CAN DO IT JUST THINK IT ]
+// | Copyright (c) 2019  http://www.sycit.cn
 // +----------------------------------------------------------------------
-// | Copyright (c) 2006-2016 http://thinkphp.cn All rights reserved.
+// | Author: Peter.Zhang  <hyzwd@outlook.com>
 // +----------------------------------------------------------------------
-// | Licensed ( http://www.apache.org/licenses/LICENSE-2.0 )
+// | Date:   2019/9/19
 // +----------------------------------------------------------------------
-// | Author: yunwuxin <448901948@qq.com>
+// | Title:  ResponseException.php
 // +----------------------------------------------------------------------
+
+declare (strict_types = 1);
 
 namespace think\exception;
 
+use RuntimeException;
 use think\Response;
 
 /**
  * 响应异常
+ * Class ResponseException
+ * @package think\exception
  */
-class ResponseException extends \RuntimeException
+class ResponseException extends RuntimeException
 {
     /**
      * @var Response
@@ -26,11 +31,12 @@ class ResponseException extends \RuntimeException
     public function __construct(Response $response)
     {
         $this->response = $response;
+
+        parent::__construct();
     }
 
     public function getResponse()
     {
         return $this->response;
     }
-
 }

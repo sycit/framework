@@ -4,7 +4,7 @@
 // +----------------------------------------------------------------------
 // | Author: Peter.Zhang  <hyzwd@outlook.com>
 // +----------------------------------------------------------------------
-// | Date:   2019/8/10
+// | Date:   2019/9/18
 // +----------------------------------------------------------------------
 // | Title:  Log.php
 // +----------------------------------------------------------------------
@@ -21,6 +21,9 @@ use think\log\ChannelSet;
 
 /**
  * 日志管理类
+ * Class Log
+ * @package think
+ * @mixin Channel
  */
 class Log extends Manager implements LoggerInterface
 {
@@ -42,23 +45,12 @@ class Log extends Manager implements LoggerInterface
      */
     public function getDefaultDriver()
     {
-        return $this->getConfig('default');
+        return $this->config('default');
     }
 
-    /**
-     * 获取日志配置
-     * @access public
-     * @param null|string $name    名称
-     * @param mixed       $default 默认值
-     * @return mixed
-     */
-    public function getConfig(string $name = null, $default = null)
+    public static function __make(App $app)
     {
-        if (!is_null($name)) {
-            return $this->app->config->get('log.' . $name, $default);
-        }
-
-        return $this->app->config->get('log');
+        return new static($app, $app->getReadsConfig('log'));
     }
 
     /**
@@ -70,7 +62,7 @@ class Log extends Manager implements LoggerInterface
      */
     public function getChannelConfig($channel, $name = null, $default = null)
     {
-        if ($config = $this->getConfig("channels.{$channel}")) {
+        if ($config = $this->config("channels.{$channel}")) {
             return Arr::get($config, $name, $default);
         }
 
@@ -101,7 +93,7 @@ class Log extends Manager implements LoggerInterface
         $driver = parent::createDriver($name);
 
         $lazy  = !$this->getChannelConfig($name, "realtime_write", false) && !$this->app->runningInConsole();
-        $allow = array_merge($this->getConfig("level", []), $this->getChannelConfig($name, "level", []));
+        $allow = array_merge($this->config("level", []), $this->getChannelConfig($name, "level", []));
 
         return new Channel($name, $driver, $allow, $lazy, $this->app->event);
     }
@@ -182,7 +174,7 @@ class Log extends Manager implements LoggerInterface
      */
     public function record($msg, string $type = 'info', array $context = [], bool $lazy = true)
     {
-        $channel = $this->getConfig('type_channel.' . $type);
+        $channel = $this->config('type_channel.' . $type);
 
         $this->channel($channel)->record($msg, $type, $context, $lazy);
 

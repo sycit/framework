@@ -4,7 +4,7 @@
 // +----------------------------------------------------------------------
 // | Author: Peter.Zhang  <hyzwd@outlook.com>
 // +----------------------------------------------------------------------
-// | Date:   2019/8/10
+// | Date:   2019/9/18
 // +----------------------------------------------------------------------
 // | Title:  Service.php
 // +----------------------------------------------------------------------
@@ -13,11 +13,10 @@ declare (strict_types = 1);
 
 namespace think;
 
-use Closure;
-use think\event\RouteLoaded;
-
 /**
  * 系统服务基础类
+ * Class Service
+ * @package think
  * @method void register()
  * @method void boot()
  */
@@ -28,27 +27,6 @@ abstract class Service
     public function __construct(App $app)
     {
         $this->app = $app;
-    }
-
-    /**
-     * 加载路由
-     * @access protected
-     * @param string $path 路由路径
-     */
-    protected function loadRoutesFrom($path)
-    {
-        $this->registerRoutes(function () use ($path) {
-            include $path;
-        });
-    }
-
-    /**
-     * 注册路由
-     * @param Closure $closure
-     */
-    protected function registerRoutes(Closure $closure)
-    {
-        $this->app->event->listen(RouteLoaded::class, $closure);
     }
 
     /**

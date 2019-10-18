@@ -1,14 +1,15 @@
 <?php
 // +----------------------------------------------------------------------
-// | ThinkPHP [ WE CAN DO IT JUST THINK ]
+// | Copyright (c) 2019  http://www.sycit.cn
 // +----------------------------------------------------------------------
-// | Copyright (c) 2006~2019 http://thinkphp.cn All rights reserved.
+// | Author: Peter.Zhang  <hyzwd@outlook.com>
 // +----------------------------------------------------------------------
-// | Licensed ( http://www.apache.org/licenses/LICENSE-2.0 )
+// | Date:   2019/9/18
 // +----------------------------------------------------------------------
-// | Author: yunwuxin <448901948@qq.com>
+// | Title:  ModelService.php
 // +----------------------------------------------------------------------
-declare (strict_types = 1);
+
+declare(strict_types = 1);
 
 namespace think\service;
 
@@ -17,16 +18,18 @@ use think\Service;
 
 /**
  * 模型服务类
+ * Class ModelService
+ * @package think\service
  */
 class ModelService extends Service
 {
     public function boot()
     {
+        Model::setDb($this->app->db);
+        Model::setEvent($this->app->event);
+        Model::setInvoker([$this->app, 'invoke']);
         Model::maker(function (Model $model) {
-            $db     = $this->app->db;
             $config = $this->app->config;
-            $model->setDb($db);
-            $model->setEvent($this->app->event);
 
             $isAutoWriteTimestamp = $model->getAutoWriteTimestamp();
 

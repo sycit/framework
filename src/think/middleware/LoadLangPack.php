@@ -1,13 +1,14 @@
 <?php
 // +----------------------------------------------------------------------
-// | ThinkPHP [ WE CAN DO IT JUST THINK ]
+// | Copyright (c) 2019  http://www.sycit.cn
 // +----------------------------------------------------------------------
-// | Copyright (c) 2006~2019 http://thinkphp.cn All rights reserved.
+// | Author: Peter.Zhang  <hyzwd@outlook.com>
 // +----------------------------------------------------------------------
-// | Licensed ( http://www.apache.org/licenses/LICENSE-2.0 )
+// | Date:   2019/9/22
 // +----------------------------------------------------------------------
-// | Author: liu21st <liu21st@gmail.com>
+// | Title:  LoadLangPack.php
 // +----------------------------------------------------------------------
+
 declare (strict_types = 1);
 
 namespace think\middleware;
@@ -15,64 +16,60 @@ namespace think\middleware;
 use Closure;
 use think\App;
 use think\Lang;
-use think\Request;
-use think\Response;
 
 /**
- * 多语言加载
+ * 多语言中间件
+ * Class LoadLangPack
+ * @package think\middleware
  */
 class LoadLangPack
 {
+    protected $app;
+
+    protected $lang;
+
+    public function __construct(App $app, Lang $lang)
+    {
+        $this->app  = $app;
+        $this->lang = $lang;
+
+        $this->init();
+    }
 
     /**
-     * 多语言初始化
-     * @access public
-     * @param Request $request
+     * 自动识别语言，加载语言包
+     * @param $request
      * @param Closure $next
-     * @param Lang    $lang
-     * @param App     $app
-     * @return Response
+     * @return mixed
      */
-    public function handle($request, Closure $next, Lang $lang, App $app)
+    public function handle($request, Closure $next)
     {
-        // 绑定 Lang 到容器
-        $app->bind('lang',Lang::class);
-
         // 自动侦测当前语言
-        $langset = $lang->detect();
+        $langset = $this->lang->detect($request);
 
-        if (!empty($langset)) {
-            // 加载系统语言包
-            $lang->load([
-                $app->getThinkPath() . 'lang' . DIRECTORY_SEPARATOR . $langset . '.php',
-            ]);
-
-            $this->LoadLangPack($langset, $lang, $app);
+        if ($this->lang->defaultLangSet() != $langset) {
+            $this->app->LoadLangPack($langset);
         }
 
-        $lang->saveToCookie($app->cookie);
+        // 加载全局语言包
+        if ($defaultPath = $this->lang->config('default_lang_path')) {
+            // 格式：zh-cn.php/en.php
+            $this->lang->load([
+                $this->app->getRootPath() . $defaultPath . DIRECTORY_SEPARATOR . $langset . '.php',
+            ]);
+        }
+
+        $this->lang->saveToCookie($this->app->cookie);
 
         return $next($request);
     }
 
-    /**
-     * 加载语言包
-     * @param string $langset 语言
-     * @param Lang $lang
-     * @param App $app
-     * @author Peter.Zhang
-     */
-    protected function loadLangPack($langset, Lang $lang, App $app)
+    protected function init()
     {
-        // 加载应用语言包
-        $files = glob($app->getAppPath() . 'lang' . DIRECTORY_SEPARATOR . $langset . '.*');
-        $lang->load($files);
+        // 绑定 lang 标识
+        $this->app->bind('lang',Lang::class);
 
-        // 加载扩展（自定义）语言包
-        $list = $app->config->get('lang.extend_list', []);
-
-        if (isset($list[$langset])) {
-            $lang->load($list[$langset]);
-        }
+        // 加载应用默认语言包
+        $this->app->loadLangPack($this->app->lang->defaultLangSet());
     }
 }

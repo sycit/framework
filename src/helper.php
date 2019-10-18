@@ -68,6 +68,23 @@ if (!function_exists('lang')) {
     }
 }
 
+if (!function_exists('invoke')) {
+    /**
+     * 调用反射实例化对象或者执行方法 支持依赖注入
+     * @param mixed $call 类名或者callable
+     * @param array $args 参数
+     * @return mixed
+     */
+    function invoke($call, array $args = [])
+    {
+        if (is_callable($call)) {
+            return Container::getInstance()->invoke($call, $args);
+        }
+
+        return Container::getInstance()->invokeClass($call, $args);
+    }
+}
+
 if (!function_exists('parse_name')) {
     /**
      * 字符串命名风格转换

@@ -1,38 +1,52 @@
 <?php
 // +----------------------------------------------------------------------
-// | ThinkPHP [ WE CAN DO IT JUST THINK IT ]
+// | Copyright (c) 2019  http://www.sycit.cn
 // +----------------------------------------------------------------------
-// | Copyright (c) 2006-2016 http://thinkphp.cn All rights reserved.
+// | Author: Peter.Zhang  <hyzwd@outlook.com>
 // +----------------------------------------------------------------------
-// | Licensed ( http://www.apache.org/licenses/LICENSE-2.0 )
+// | Date:   2019/9/18
 // +----------------------------------------------------------------------
-// | Author: yunwuxin <448901948@qq.com>
+// | Title:  ApiException.php
 // +----------------------------------------------------------------------
+
+declare (strict_types = 1);
 
 namespace think\exception;
 
+use RuntimeException;
+
 /**
- * API异常
+ * Class ApiException API异常
+ * @package think\exception
  */
-class ApiException extends \RuntimeException
+class ApiException extends RuntimeException
 {
-    private $statusCode;
+    /**
+     * API编码
+     * @var integer
+     */
+    private $apiCode = 0;
+
+    /**
+     * 响应头
+     * @var array
+     */
     private $headers;
 
-    public function __construct($statusCode, string $message = null, \Exception $previous = null, array $headers = [], $code = 200)
+    public function __construct($apiCode, string $message = null, \Exception $previous = null, array $headers = [], int $httpCode = 200)
     {
-        $this->statusCode = $statusCode;
-        $this->headers    = $headers;
+        $this->apiCode = $apiCode;
+        $this->headers = $headers;
 
-        parent::__construct($message, $code, $previous);
+        parent::__construct($message, $httpCode, $previous);
     }
 
-    public function getStatusCode()
+    public function getApiCode()
     {
-        return $this->statusCode;
+        return $this->apiCode;
     }
 
-    public function getHeaders()
+    public function getHeaders(): array
     {
         return $this->headers;
     }

@@ -1,22 +1,39 @@
 <?php
 // +----------------------------------------------------------------------
-// | ThinkPHP [ WE CAN DO IT JUST THINK IT ]
+// | Copyright (c) 2019  http://www.sycit.cn
 // +----------------------------------------------------------------------
-// | Copyright (c) 2006-2016 http://thinkphp.cn All rights reserved.
+// | Author: Peter.Zhang  <hyzwd@outlook.com>
 // +----------------------------------------------------------------------
-// | Licensed ( http://www.apache.org/licenses/LICENSE-2.0 )
+// | Date:   2019/9/27
 // +----------------------------------------------------------------------
-// | Author: yunwuxin <448901948@qq.com>
+// | Title:  InvalidArgumentException.php
 // +----------------------------------------------------------------------
+
+declare (strict_types=1);
 
 namespace think\exception;
 
-use Psr\Cache\InvalidArgumentException as Psr6CacheInvalidArgumentInterface;
-use Psr\SimpleCache\InvalidArgumentException as SimpleCacheInvalidArgumentInterface;
-
 /**
  * 非法数据异常
+ * Class InvalidArgumentException
+ * @package think\exception
  */
-class InvalidArgumentException extends \InvalidArgumentException implements Psr6CacheInvalidArgumentInterface, SimpleCacheInvalidArgumentInterface
+class InvalidArgumentException extends \InvalidArgumentException
 {
+    /**
+     * API编码
+     * @var integer
+     */
+    private $apiCode = 0;
+
+    public function __construct(string $message, $apiCode = 4000)
+    {
+        $this->apiCode = $apiCode;
+        parent::__construct('invalid argument: ' . $message,200);
+    }
+
+    public function getApiCode()
+    {
+        return $this->apiCode;
+    }
 }

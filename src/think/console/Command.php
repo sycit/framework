@@ -507,7 +507,7 @@ abstract class Command
      */
     protected function isMultiApp(): bool
     {
-        $autoMulti = $this->app->config->get('app.domain_bind', []);
-        return (!empty($autoMulti) ? true : false) || !is_dir($this->app->getBasePath() . 'controller');
+        $autoMulti = $this->app->config->get('app.auto_multi_app', false);
+        return $autoMulti || !is_dir($this->app->getBasePath() . 'controller');
     }
 }

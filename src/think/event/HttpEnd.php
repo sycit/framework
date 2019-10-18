@@ -1,19 +1,22 @@
 <?php
 // +----------------------------------------------------------------------
-// | ThinkPHP [ WE CAN DO IT JUST THINK ]
+// | Copyright (c) 2019  http://www.sycit.cn
 // +----------------------------------------------------------------------
-// | Copyright (c) 2006~2019 http://thinkphp.cn All rights reserved.
+// | Author: Peter.Zhang  <hyzwd@outlook.com>
 // +----------------------------------------------------------------------
-// | Licensed ( http://www.apache.org/licenses/LICENSE-2.0 )
+// | Date:   2019/9/18
 // +----------------------------------------------------------------------
-// | Author: liu21st <liu21st@gmail.com>
+// | Title:  HttpEnd.php
 // +----------------------------------------------------------------------
+
 declare (strict_types = 1);
 
 namespace think\event;
 
 /**
- * HttpEnd事件类
+ * 应用结束事件类
+ * Class HttpEnd
+ * @package think\event
  */
 class HttpEnd
 {}

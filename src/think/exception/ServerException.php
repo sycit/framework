@@ -1,54 +1,48 @@
 <?php
 // +----------------------------------------------------------------------
-// | ThinkPHP [ WE CAN DO IT JUST THINK IT ]
+// | Copyright (c) 2019  http://www.sycit.cn
 // +----------------------------------------------------------------------
-// | Copyright (c) 2006-2016 http://thinkphp.cn All rights reserved.
+// | Author: Peter.Zhang  <hyzwd@outlook.com>
 // +----------------------------------------------------------------------
-// | Licensed ( http://www.apache.org/licenses/LICENSE-2.0 )
+// | Date:   2019/9/18
 // +----------------------------------------------------------------------
-// | Author: yunwuxin <448901948@qq.com>
+// | Title:  ServerException.php
 // +----------------------------------------------------------------------
+
+declare (strict_types = 1);
 
 namespace think\exception;
 
 use Psr\Container\NotFoundExceptionInterface;
+use RuntimeException;
 use Throwable;
 
 /**
- * 类不存在异常
+ * Class ServerException 服务器异常
+ * @package think\exception
  */
-class ServerException extends \RuntimeException implements NotFoundExceptionInterface
+class ServerException extends RuntimeException implements NotFoundExceptionInterface
 {
     /**
-     * 错误代码
+     * API编码
      * @var string|int
-     * @author Peter.Zhang
      */
-    protected $errorCode;
+    private $apiCode;
 
-    /**
-     * 构造函数
-     * @param string $errorCode    错误代码如：AS.001
-     * @param string $message      错误描述
-     * @param int $httpCode        返回的HTTP状态码
-     * @param Throwable $previous  异常对象
-     */
-    public function __construct($errorCode, string $message = '', int $httpCode = 404, Throwable $previous = null)
+    public function __construct($apiCode, string $message = null, Throwable $previous = null, int $httpCode = 0)
     {
-        $this->code       = $httpCode;
-        $this->message    = $message;
-        $this->errorCode  = $errorCode;
+        $this->message = $message;
+        $this->apiCode = $apiCode;
 
         parent::__construct($message, $httpCode, $previous);
     }
 
     /**
-     * 获取错误代码
-     * @access public
+     * 获取API状态码
      * @return string
      */
-    public function getErrorCode()
+    public function getApiCode()
     {
-        return $this->errorCode;
+        return $this->apiCode;
     }
 }

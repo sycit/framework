@@ -60,7 +60,7 @@ class Build extends Command
     /**
      * 创建应用
      * @access protected
-     * @param  string $name 应用名
+     * @param  string $app  应用名
      * @param  array  $list 应用目录结构
      * @return void
      */
@@ -102,8 +102,8 @@ class Build extends Command
                     switch ($path) {
                         case 'controller': // 控制器
                             if ($this->app->config->get('route.controller_suffix')) {
-                                $filename = $appPath . $path . DIRECTORY_SEPARATOR . $val . 'Controller.php';
-                                $class    = $val . 'Controller';
+                                $filename = $appPath . $path . DIRECTORY_SEPARATOR . $val . 'Dispatch.php';
+                                $class    = $val . 'Dispatch';
                             }
                             $content = "<?php" . PHP_EOL . "namespace {$space};" . PHP_EOL . PHP_EOL . "class {$class}" . PHP_EOL . "{" . PHP_EOL . PHP_EOL . "}";
                             break;
@@ -137,7 +137,7 @@ class Build extends Command
      */
     protected function buildHello(string $appName, string $namespace): void
     {
-        $suffix   = $this->app->config->get('route.controller_suffix') ? 'Controller' : '';
+        $suffix   = $this->app->config->get('route.controller_suffix') ? 'Dispatch' : '';
         $filename = $this->basePath . ($appName ? $appName . DIRECTORY_SEPARATOR : '') . 'controller' . DIRECTORY_SEPARATOR . 'Index' . $suffix . '.php';
 
         if (!is_file($filename)) {

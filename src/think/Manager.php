@@ -1,24 +1,36 @@
 <?php
 // +----------------------------------------------------------------------
-// | ThinkPHP [ WE CAN DO IT JUST THINK ]
+// | Copyright (c) 2019  http://www.sycit.cn
 // +----------------------------------------------------------------------
-// | Copyright (c) 2006~2019 http://thinkphp.cn All rights reserved.
+// | Author: Peter.Zhang  <hyzwd@outlook.com>
 // +----------------------------------------------------------------------
-// | Licensed ( http://www.apache.org/licenses/LICENSE-2.0 )
+// | Date:   2019/9/18
 // +----------------------------------------------------------------------
-// | Author: yunwuxin <448901948@qq.com>
+// | Title:  Manager.php
 // +----------------------------------------------------------------------
+
 declare (strict_types = 1);
 
 namespace think;
 
-use InvalidArgumentException;
+use think\exception\InvalidArgumentException;
 use think\helper\Str;
 
+/**
+ * 驱动管理
+ * Class Manager
+ * @package think
+ */
 abstract class Manager
 {
     /** @var App */
     protected $app;
+
+    /**
+     * 配置
+     * @var array
+     */
+    protected $config = [];
 
     /**
      * 驱动
@@ -32,9 +44,42 @@ abstract class Manager
      */
     protected $namespace = null;
 
-    public function __construct(App $app)
+    public function __construct(App $app, array $config = [])
     {
-        $this->app = $app;
+        $this->app    = $app;
+        $this->config = array_merge($this->config, $config);
+    }
+
+    /**
+     * 读取配置
+     * @param string $name
+     * @param null $default
+     * @return array|mixed|null
+     */
+    public function config(string $name = '', $default = null)
+    {
+        // 无参数时获取所有
+        if (empty($name)) {
+            return $this->config;
+        }
+
+        if (strpos($name, '.')) {
+            $name    = explode('.', $name);
+            $config  = $this->config;
+
+            // 按.拆分成多维数组进行判断
+            foreach ($name as $val) {
+                if (isset($config[$val])) {
+                    $config = $config[$val];
+                } else {
+                    return $default;
+                }
+            }
+
+            return $config;
+        }
+
+        return isset($this->config[$name]) ? (empty($this->config[$name]) ? $default : $this->config[$name]) : $default;
     }
 
     /**

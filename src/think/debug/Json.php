@@ -21,14 +21,12 @@ use think\Response;
  */
 class Json
 {
-    protected $config = [
-        'tabs' => ['base' => '基本', 'file' => '文件', 'info' => '流程', 'notice|error' => '错误', 'sql' => 'SQL', 'debug|log' => '调试'],
-    ];
+    protected $config = [];
 
     // 实例化并传入参数
     public function __construct(array $config = [])
     {
-        $this->config = array_merge($this->config, $config);
+        $this->config = $config;
     }
 
     public function output(App $app, Response $response, array $log = [])
@@ -47,7 +45,6 @@ class Json
         }
 
         // 信息
-
         $info = $this->getFileInfo();
 
         $base = [
@@ -57,16 +54,19 @@ class Json
             '内存消耗: ' . $mem . 'kb',
             '文件加载: ' . count($info),
             '查询信息: ' . $app->db->getQueryTimes() . ' queries',
-            '缓存信息: ' . $app->cache->getReadTimes() . ' reads,' . $app->cache->getWriteTimes() . ' writes',
         ];
 
-        if ($app->has('session') && $app->session->getId(false)) {
+        if ($app->has('cache')) {
+            $base[] = '缓存信息: ' . $app->cache->getReadTimes() . ' reads,' . $app->cache->getWriteTimes() . ' writes';
+        }
+
+        if ($app->has('session') && $app->session->getId()) {
             $base[] = '会话信息: SESSION_ID=' . $app->session->getId();
         }
 
         // 页面Trace信息
         $trace = [];
-        foreach ($this->config['tabs'] as $name => $title) {
+        foreach ($this->config['trace_tabs'] as $name => $title) {
             $name = strtolower($name);
             switch ($name) {
                 case 'base': // 基本信息
@@ -122,8 +122,6 @@ class Json
                     }
                     break;
                 case '错误':
-                    $line[] = str_replace("\n", '\n', addslashes(is_scalar($m) ?: $m));
-                    break;
                 case 'sql':
                     $line[] = str_replace("\n", '\n', addslashes($m));
                     break;

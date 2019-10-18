@@ -4,7 +4,7 @@
 // +----------------------------------------------------------------------
 // | Author: Peter.Zhang  <hyzwd@outlook.com>
 // +----------------------------------------------------------------------
-// | Date:   2019/8/10
+// | Date:   2019/9/18
 // +----------------------------------------------------------------------
 // | Title:  Route.php
 // +----------------------------------------------------------------------
@@ -14,14 +14,15 @@ declare (strict_types = 1);
 namespace think;
 
 use Closure;
-use think\exception\ResponseException;
-use think\helper\Str;
+use think\exception\ApiException;
 use think\middleware\CheckRequestCache;
-use think\route\dispatch\Callback as CallbackDispatch;
-use think\route\dispatch\Controller as ControllerDispatch;
+use think\route\Dispatch;
+use think\route\Domain;
 
 /**
  * 路由管理类
+ * Class Route
+ * @package think
  */
 class Route
 {
@@ -34,9 +35,8 @@ class Route
     /**
      * 请求URL
      * @var string
-     * @author Peter.Zhang
      */
-    protected $reqUrl;
+    protected $url;
 
     /**
      * 请求对象
@@ -45,73 +45,33 @@ class Route
     protected $request;
 
     /**
-     * 当前HOST
-     * @var string
-     */
-    protected $host;
-
-    /**
      * 路由绑定
      * @var array
      */
-    protected $bindDomain = [];
-
-    /**
-     * 路由变量
-     * @var array
-     */
-    protected $param;
+    protected $bind = [];
 
     /**
      * 路由参数
      * @var array
      */
-    protected $option = [];
-
-    /**
-     * 路由变量规则
-     * @var array
-     */
-    protected $pattern = [];
-
-    /**
-     * 分组路由接口
-     * @var array
-     */
-    protected $rules = [];
-
-    /**
-     * URL变量
-     * @var array
-     */
-    protected $vars = [];
+    protected $append = [];
 
     public function __construct(App $app)
     {
-        $this->app    = $app;
-        $this->reqUrl = str_replace($this->app->config->get('app.pathinfo_depr'), '|', $this->app->request->pathinfo());
-    }
-
-    public function config(string $name = null)
-    {
-        if (is_null($name)) {
-            return $this->app->config->get($name);
-        }
-
-        return $this->app->config->get($name) ?? null;
+        $this->app = $app;
     }
 
     /**
      * 路由调度
      * @param Request $request
      * @param Closure $withRoute
-     * @return Response
-     * @author Peter.Zhang
-     */
+    * @return Response
+        * @author Peter.Zhang
+    */
     public function dispatch(Request $request, $withRoute = null): Response
     {
         $this->request = $request;
-        $this->host    = $this->request->host(true);
+        $this->url = $this->path();
 
         if ($withRoute) {
             $checkCallback = function () use ($withRoute) {
@@ -122,200 +82,171 @@ class Route
 
             $dispatch = $checkCallback();
         } else {
-            $dispatch = $this->urlDispatch($this->reqUrl);
+            $dispatch = $this->execDispatch($this->url);
         }
 
         $dispatch->init($this->app);
 
-        $this->app->middleware->add(function () use ($dispatch) {
-            try {
-                $response = $dispatch->run();
-            } catch (ResponseException $exception) {
-                $response = $exception->getResponse();
-            }
-
-            return $response;
-        });
-
-        return $this->app->middleware->dispatch($request);
+        return $this->app->middleware->pipeline()
+            ->send($request)
+            ->then(function () use ($dispatch) {
+                return $dispatch->run();
+            });
     }
 
     /**
      * 检测URL路由
      * @access public
-     * @return ControllerDispatch
+     * @return Dispatch
      */
     public function check()
     {
-        $result = $this->checkBind();
-
-        if ($result && !empty($this->option['append'])) {
-            $this->request->setRoute($this->option['append']);
-            unset($this->option['append']);
+        if (empty($this->bind)) {
+            $result = false;
+        } else {
+            $result = $this->execDomain()->checkBind($this->request, $this->url);
         }
 
         if (false !== $result) {
             return $result;
         }
 
-        return $this->urlDispatch($this->reqUrl);
+        return $this->execDispatch($this->url);
+    }
+
+    /**
+     * 获取路由参数
+     * @return array
+     */
+    public function append()
+    {
+        return $this->append;
     }
 
     /**
      * 设置路由参数
-     * @access public
-     * @param  array $option 参数
+     * @param  array $append 参数
      * @return $this
      */
-    public function option(array $option)
+    public function setAppend(array $append = [])
     {
-        $this->option = array_merge($this->option, $option);
-
-        return $this;
-    }
-
-    /**
-     * 设置单个路由参数
-     * @access public
-     * @param  string $name  参数名
-     * @param  mixed  $value 值
-     * @return $this
-     */
-    public function setOption(string $name, $value)
-    {
-        $this->option[$name] = $value;
-
-        return $this;
-    }
-
-    /**
-     * 获取路由参数定义
-     * @access public
-     * @param  string $name 参数名
-     * @param  mixed  $default 默认值
-     * @return mixed
-     */
-    public function getOption(string $name = '', $default = null)
-    {
-        if ('' === $name) {
-            return $this->option;
-        }
-
-        return $this->option[$name] ?? $default;
-    }
-
-    /**
-     * 附加路由隐式参数
-     * @access public
-     * @param  array $append 追加参数
-     * @return $this
-     */
-    public function append(array $append = [])
-    {
-        $this->option['append'] = $append;
-
-        return $this;
-    }
-
-    /**
-     * 设置参数过滤检查
-     * @access public
-     * @param  array $filter 参数过滤
-     * @return $this
-     */
-    public function filter(array $filter)
-    {
-        $this->option['filter'] = $filter;
-
-        return $this;
-    }
-
-    /**
-     * 绑定验证
-     * @access public
-     * @param  mixed  $validate 验证器类
-     * @param  string $scene 验证场景
-     * @param  array  $message 验证提示
-     * @param  bool   $batch 批量验证
-     * @return $this
-     */
-    public function validate($validate, string $scene = null, array $message = [], bool $batch = false)
-    {
-        $this->option['validate'] = [$validate, $scene, $message, $batch];
-
-        return $this;
-    }
-
-    /**
-     * 指定路由中间件
-     * @access public
-     * @param  string|array|Closure $middleware 中间件
-     * @param  mixed                $param 参数
-     * @return $this
-     */
-    public function middleware($middleware, $param = null)
-    {
-        if (is_null($param) && is_array($middleware)) {
-            $this->option['middleware'] = $middleware;
-        } else {
-            foreach ((array) $middleware as $item) {
-                $this->option['middleware'][] = [$item, $param];
-            }
-        }
-
-        return $this;
-    }
-
-    /**
-     * 注册变量规则
-     * @access public
-     * @param  array $pattern 变量规则
-     * @return $this
-     */
-    public function pattern(array $pattern)
-    {
-        $this->pattern = array_merge($this->pattern, $pattern);
-
+        $this->append = array_merge($this->append, $append);
         return $this;
     }
 
     /**
      * 设置路由缓存
-     * @access public
      * @param  array|string $cache 缓存
-     * @return $this
      */
     public function cache($cache)
     {
-        return $this->middleware(CheckRequestCache::class, $cache);
+        $this->app->middleware->import([CheckRequestCache::class, $cache]);
     }
 
     /**
-     * URL 正则匹配
-     * @param string $value
-     * @param string $rule
-     * @return bool
+     * 获取配置
+     * @param string|null $name
+     * @return mixed|null
+     */
+    public function config(string $name = null)
+    {
+        if (is_null($name)) {
+            return $this->app->config->get($name);
+        }
+        return $this->app->config->get($name) ?? null;
+    }
+
+    /**
+     * 设定绑定规则
+     * @param array $bind
+     * @return $this
      * @author Peter.Zhang
      */
-    public function regex(string $value, string $rule): bool
+    public function setBind(array $bind)
     {
-        switch ($rule) {
-            case ':name':
-                $result = preg_match('/^[A-Za-z0-9\-_]+$/', $value) ? true : false;
-                break;
-            case ':year':
-                // 是否是一个有效日期
-                $result = false !== strtotime($value);
-                break;
-            case ':id':
-                $result = ctype_digit($value) ? true : false;
-                break;
-            default:
-                $result = false;
-                break;
+        $this->bind = $bind;
+        return $this;
+    }
+
+    /**
+     * 获取绑定规则
+     * @return array
+     */
+    public function bind()
+    {
+        return $this->bind;
+    }
+
+    /**
+     * 获取控制器类的类名
+     * @param string $name 控制器名
+     * @return string
+     */
+    public function getNamespace(string $name)
+    {
+        return $this->app->parseClass('controller', $name);
+    }
+
+    /**
+     * 默认路由调度
+     * @access public
+     * @param string|array $url   URL地址
+     * @param array        $param 请求参数
+     * @return Dispatch
+     */
+    protected function execDispatch($url, array $param = []): Dispatch
+    {
+        // 解析默认URL地址
+        $dispatch = $this->parseDefaultUrl($url);
+        return new Dispatch($this->request, $this, $dispatch, $param);
+    }
+
+    /**
+     * 域名绑定调度
+     * @return Domain
+     */
+    protected function execDomain(): Domain
+    {
+        return new Domain($this);
+    }
+
+    /**
+     * 解析默认URL地址
+     * @access protected
+     * @param  string $url URL
+     * @return array
+     */
+    protected function parseDefaultUrl($url): array
+    {
+        $path = $this->parseUrlPath($url);
+
+        if (empty($path)) {
+            return [null, null];
         }
 
-        return $result;
+        // 解析控制器
+        $controller = !empty($path) ? array_shift($path) : null;
+
+        if ($controller && !preg_match('/^[A-Za-z][\w|.]*$/', $controller)) {
+            throw new ApiException(404, 'controller not exists:' . $controller);
+        }
+
+        // 解析操作
+        $action = !empty($path) ? array_shift($path) : null;
+        $append = [];
+
+        // 解析额外参数
+        if ($path) {
+            preg_replace_callback('/(\w+)\|([^|]+)/', function ($match) use (&$append) {
+                $append[$match[1]] = strip_tags($match[2]);
+            }, implode('|', $path));
+        }
+
+        // 设置当前请求的参数
+        $this->append = array_merge($this->append, $append);
+
+        // 封装路由
+        return [$controller, $action];
     }
 
     /**
@@ -324,7 +255,7 @@ class Route
      * @param  string $url URL地址
      * @return array
      */
-    public function parseUrlPath(string $url): array
+    protected function parseUrlPath(string $url): array
     {
         // 分隔符替换 确保路由定义使用统一的分隔符
         $url = str_replace('|', '/', $url);
@@ -341,257 +272,26 @@ class Route
     }
 
     /**
-     * 设定绑定规则
-     * @param array $bind
-     * @return $this
-     * @author Peter.Zhang
+     * 获取当前请求URL的pathinfo信息(不含URL后缀)
+     * @return string
      */
-    public function bindDomain(array $bind)
+    protected function path(): string
     {
-        $this->bindDomain = $bind;
-
-        return $this;
-    }
-
-    /**
-     * 默认URL调度
-     * @access public
-     * @param string $url URL地址
-     * @return ControllerDispatch
-     */
-    public function urlDispatch(string $url): ControllerDispatch
-    {
-        return new ControllerDispatch($this->request, $this, $url);
-    }
-
-    /**
-     * 检测域名的路由规则
-     * @return mixed
-     */
-    protected function checkBind()
-    {
-        // 路由绑定规则
-        list($rule, $bind) = $this->parseBind();
-
-        if (!empty($bind)) {
-
-            $this->parseBindAppendParam($rule, $bind);
-
-            // 如果有URL绑定 则进行绑定检测
-            $type = substr($bind, 0, 1);
-            $bind = substr($bind, 1);
-
-            $bindTo = [
-                '\\' => 'bindToClass',      // 绑定到类
-                '@'  => 'bindToController', // 绑定到控制器
-                ':'  => 'bindToNamespace',  // 绑定到命名空间
-            ];
-
-            if (isset($bindTo[$type])) {
-                return $this->{$bindTo[$type]}($this->reqUrl, $bind);
-            }
+        $depr = $this->config('app.pathinfo_depr');
+        $type = $this->config('app.auto_response_type');
+        $path = $this->request->pathinfo();
+        $name = pathinfo($path, PATHINFO_EXTENSION);
+        // 设置响应输出类型
+        if (isset($type[$name])) {
+            $this->app->setResponse($type[$name]);
         }
+        // 去除URL后缀
+        $url = preg_replace('/\.' . $name . '$/i', '', $path);
+        $url = str_replace($depr, '|', $url);
 
-        return false;
-    }
+        unset($type);
+        unset($path);
 
-    /**
-     * 解析绑定规则
-     * @return array
-     * @author Peter.Zhang
-     */
-    protected function parseBind(): array
-    {
-        $value = [null, null];
-
-        if (empty($this->bindDomain)) {
-            return $value;
-        }
-
-        $array  = explode('|', $this->reqUrl);
-        $array0 = !empty($array[0]) ? (string)$array[0] : '';
-        $array1 = !empty($array[1]) ? (string)$array[1] : '';
-
-        if ($array0 == '' ||  $array1 == '') {
-            return $value;
-        }
-
-        // 第一个单元移出
-        array_shift($array);
-
-        $bindTo = ['\\', '@', ':'];
-
-        foreach ($this->bindDomain as $item => $val) {
-            $rule = explode('/', $item);
-            if ($rule[0] == $array0 && is_string($val) && in_array(substr($val, 0, 1), $bindTo)) {
-                if ($this->verifyItemRule($item, $array)) {
-                    $value = [$item, $val];
-                    break;
-                }
-            }
-
-            unset($rule);
-        }
-
-        return $value;
-    }
-
-    /**
-     * 验证规则 [:name, :id]
-     * @param string $item  路由规则
-     * @param array  $url   URL数组
-     * @return bool
-     * @author Peter.Zhang
-     */
-    protected function verifyItemRule(string $item, array $url): bool
-    {
-        $item = explode('/', $item);
-
-        // 第一个单元移出
-        array_shift($item);
-
-        $count = count($item);
-
-        if ($count !== count($url)) {
-            return false;
-        }
-
-        $regex = 0;
-        foreach ($item as $key => $val) {
-            if (isset($url[$key]) && ':' == substr($val, 0, 1)) {
-                $regex = $this->regex($url[$key], $val) ? $regex + 1 : $regex + 0;
-            }
-        }
-
-        return $count === $regex ? true : false;
-    }
-
-    /**
-     * 路由隐式参数
-     * @param string $rule
-     * @param string $bind
-     * @author Peter.Zhang
-     */
-    protected function parseBindAppendParam(string $rule, string &$bind): void
-    {
-        if (false !== strpos($bind, '?')) {
-            list($bind, $query) = explode('?', $bind);
-
-            parse_str($query, $vars);
-
-            $url  = explode('|', $this->reqUrl);
-            $rule = explode('/', $rule);
-
-            array_shift($url);
-            array_shift($rule);
-
-            foreach ($vars as $item => $value) {
-                foreach ($rule as $key=> $val) {
-                    if ($val != $value) {
-                        continue;
-                    }
-                    if (isset($url[$key])) {
-                        $vars[$item] = $url[$key];
-                    }
-
-                }
-            }
-
-            $this->append($vars);
-        }
-    }
-
-    /**
-     * 绑定到类
-     * @access protected
-     * @param  string    $url URL地址
-     * @param  string    $class 类名（带命名空间）
-     * @return CallbackDispatch
-     */
-    protected function bindToClass(string $url, string $class): CallbackDispatch
-    {
-        $array  = explode('|', $url, 2);
-        $action = !empty($array[0]) ? $array[0] : $this->config('default_action');
-        $param  = [];
-
-        if (!empty($array[1])) {
-            $this->parseUrlParams($array[1], $param);
-        }
-
-        return new CallbackDispatch($this->request, $this, [$class, $action], $param);
-    }
-
-    /**
-     * 绑定到命名空间
-     * @access protected
-     * @param  string    $url URL地址
-     * @param  string    $namespace 命名空间
-     * @return CallbackDispatch
-     */
-    protected function bindToNamespace(string $url, string $namespace): CallbackDispatch
-    {
-        $array  = explode('|', $url, 3);
-        $class  = !empty($array[0]) ? $array[0] : $this->config('default_controller');
-        $method = !empty($array[1]) ? $array[1] : $this->config('default_action');
-        $param  = [];
-
-        if (!empty($array[2])) {
-            $this->parseUrlParams($array[2], $param);
-        }
-
-        return new CallbackDispatch($this->request, $this, [$namespace . '\\' . Str::studly((string)$class), $method], $param);
-    }
-
-    /**
-     * 绑定到控制器
-     * @access protected
-     * @param  string    $url URL地址
-     * @param  string    $controller 控制器名
-     * @return ControllerDispatch
-     */
-    protected function bindToController(string $url, string $controller): ControllerDispatch
-    {
-        $array  = explode('|', $url, 2);
-        $action = !empty($array[0]) ? $array[0] : $this->config('default_action');
-        $param  = [];
-
-        if (!empty($array[1])) {
-            $this->parseUrlParams($array[1], $param);
-        }
-
-        return new ControllerDispatch($this->request, $this, $controller . '/' . $action, $param);
-    }
-
-    /**
-     * 解析URL地址中的参数Request对象
-     * @access protected
-     * @param  string $url 路由规则
-     * @param  array  $var 变量
-     * @return void
-     */
-    protected function parseUrlParams(string $url, array &$var = []): void
-    {
-        if ($url) {
-            preg_replace_callback('/(\w+)\|([^|]+)/', function ($match) use (&$var) {
-                $var[$match[1]] = strip_tags($match[2]);
-            }, $url);
-        }
-    }
-
-    /**
-     * 设置全局的路由分组参数
-     * @access public
-     * @param string $method 方法名
-     * @param array $args 调用参数
-     * @return mixed
-     */
-    public function __call($method, $args)
-    {
-        if (count($args) > 1) {
-            $args[0] = $args;
-        }
-        array_unshift($args, $method);
-
-        return call_user_func_array([$this, 'setOption'], $args);
+        return $url;
     }
 }

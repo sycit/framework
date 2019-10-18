@@ -1,19 +1,24 @@
 <?php
 // +----------------------------------------------------------------------
-// | ThinkPHP [ WE CAN DO IT JUST THINK ]
+// | Copyright (c) 2019  http://www.sycit.cn
 // +----------------------------------------------------------------------
-// | Copyright (c) 2006~2019 http://thinkphp.cn All rights reserved.
+// | Author: Peter.Zhang  <hyzwd@outlook.com>
 // +----------------------------------------------------------------------
-// | Licensed ( http://www.apache.org/licenses/LICENSE-2.0 )
+// | Date:   2019/9/18
 // +----------------------------------------------------------------------
-// | Author: liu21st <liu21st@gmail.com>
+// | Title:  TagSet.php
 // +----------------------------------------------------------------------
+
 declare (strict_types = 1);
 
 namespace think\cache;
 
+use Psr\SimpleCache\InvalidArgumentException;
+
 /**
  * 标签集合
+ * Class TagSet
+ * @package think\cache
  */
 class TagSet
 {
@@ -44,10 +49,11 @@ class TagSet
     /**
      * 写入缓存
      * @access public
-     * @param string            $name   缓存变量名
-     * @param mixed             $value  存储数据
+     * @param string $name 缓存变量名
+     * @param mixed $value 存储数据
      * @param integer|\DateTime $expire 有效时间（秒）
      * @return bool
+     * @throws InvalidArgumentException
      */
     public function set(string $name, $value, $expire = null): bool
     {
@@ -63,6 +69,7 @@ class TagSet
      * @access public
      * @param string $name 缓存变量名
      * @return void
+     * @throws InvalidArgumentException
      */
     public function append(string $name): void
     {
@@ -76,9 +83,10 @@ class TagSet
     /**
      * 写入缓存
      * @access public
-     * @param iterable               $values 缓存数据
-     * @param null|int|\DateInterval $ttl    有效时间 0为永久
+     * @param iterable $values 缓存数据
+     * @param null|int|\DateInterval $ttl 有效时间 0为永久
      * @return bool
+     * @throws InvalidArgumentException
      */
     public function setMultiple($values, $ttl = null): bool
     {
@@ -114,6 +122,7 @@ class TagSet
      * 清除缓存
      * @access public
      * @return bool
+     * @throws InvalidArgumentException
      */
     public function clear(): bool
     {

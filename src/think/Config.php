@@ -4,7 +4,7 @@
 // +----------------------------------------------------------------------
 // | Author: Peter.Zhang  <hyzwd@outlook.com>
 // +----------------------------------------------------------------------
-// | Date:   2019/8/10
+// | Date:   2019/9/18
 // +----------------------------------------------------------------------
 // | Title:  Config.php
 // +----------------------------------------------------------------------
@@ -15,6 +15,7 @@ namespace think;
 
 /**
  * 配置管理类
+ * Class Config
  * @package think
  */
 class Config
@@ -40,6 +41,8 @@ class Config
     /**
      * 构造方法
      * @access public
+     * @param string $path
+     * @param string $ext
      */
     public function __construct(string $path = null, string $ext = '.php')
     {
@@ -60,9 +63,10 @@ class Config
      * @access public
      * @param  string $file 配置文件名
      * @param  string $name 一级配置名
+     * @param  bool   $writes 写入或读取
      * @return array
      */
-    public function load(string $file, string $name = ''): array
+    public function load(string $file, string $name = '', bool $writes = true): array
     {
         if (is_file($file)) {
             $filename = $file;
@@ -71,10 +75,10 @@ class Config
         }
 
         if (isset($filename)) {
-            return $this->parse($filename, $name);
+            return $writes ? $this->parse($filename, $name, true) : $this->parse($filename, $name, false);
         }
 
-        return $this->config;
+        return $writes ? $this->config : [];
     }
 
     /**
@@ -82,12 +86,13 @@ class Config
      * @access public
      * @param  string $file 配置文件名
      * @param  string $name 一级配置名
+     * @param  bool   $writes 写入或读取
      * @return array
      */
-    protected function parse(string $file, string $name): array
+    protected function parse(string $file, string $name, bool $writes = true): array
     {
-        $type = pathinfo($file, PATHINFO_EXTENSION);
-
+        $type   = pathinfo($file, PATHINFO_EXTENSION);
+        $config = [];
         switch ($type) {
             case 'php':
                 $config = include $file;
@@ -106,7 +111,7 @@ class Config
                 break;
         }
 
-        return isset($config) && is_array($config) ? $this->set($config, strtolower($name)) : [];
+        return is_array($config) ? ($writes ? $this->set($config, strtolower($name)) : $config) : [];
     }
 
     /**
@@ -190,5 +195,4 @@ class Config
 
         return $result;
     }
-
 }

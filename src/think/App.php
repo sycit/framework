@@ -4,7 +4,7 @@
 // +----------------------------------------------------------------------
 // | Author: Peter.Zhang  <hyzwd@outlook.com>
 // +----------------------------------------------------------------------
-// | Date:   2019/8/10
+// | Date:   2019/9/18
 // +----------------------------------------------------------------------
 // | Title:  App.php
 // +----------------------------------------------------------------------
@@ -19,27 +19,30 @@ use think\initializer\Error;
 use think\initializer\RegisterService;
 
 /**
- * App 基础类
- * @property Route      $route
- * @property Config     $config
- * @property Cache      $cache
- * @property Request    $request
- * @property Http       $http
- * @property Console    $console
- * @property Env        $env
- * @property Event      $event
+ * 基础类
+ * Class App
+ * @package think
+ *
+ * @property Annotation $annotation
  * @property Middleware $middleware
- * @property Log        $log
- * @property Lang       $lang
- * @property Db         $db
- * @property Cookie     $cookie
- * @property Session    $session
  * @property Validate   $validate
- * @property Filesystem $filesystem
+ * @property Session    $session
+ * @property Request    $request
+ * @property Console    $console
+ * @property Config     $config
+ * @property Cookie     $cookie
+ * @property Route      $route
+ * @property Event      $event
+ * @property Cache      $cache
+ * @property Http       $http
+ * @property Lang       $lang
+ * @property Log        $log
+ * @property Env        $env
+ * @property Db         $db
  */
 class App extends Container
 {
-    const VERSION = '1.0.0RC1';
+    const VERSION = '1.1.0';
 
     /**
      * 应用调试模式
@@ -96,13 +99,6 @@ class App extends Container
     protected $configExt = '.php';
 
     /**
-     * 默认响应输出类型 默认 Json
-     * @var string
-     * @author Peter.Zhang
-     */
-    protected $response = 'Json';
-
-    /**
      * 应用初始化器
      * @var array
      */
@@ -125,26 +121,33 @@ class App extends Container
     protected $initialized = false;
 
     /**
+     * 响应输出类型 默认 Json
+     * @var string
+     */
+    protected $response = '';
+
+    /**
      * 容器绑定标识
      * @var array
      */
     protected $bind = [
+        'db'                      => Db::class,
         'app'                     => App::class,
+        'env'                     => Env::class,
+        'log'                     => Log::class,
+        'http'                    => Http::class,
         'cache'                   => Cache::class,
+        'event'                   => Event::class,
+        'route'                   => Route::class,
+        'cookie'                  => Cookie::class,
         'config'                  => Config::class,
         'console'                 => Console::class,
-        'cookie'                  => Cookie::class,
-        'db'                      => Db::class,
-        'env'                     => Env::class,
-        'event'                   => Event::class,
-        'http'                    => Http::class,
-        'log'                     => Log::class,
-        'middleware'              => Middleware::class,
         'request'                 => Request::class,
         'response'                => Response::class,
-        'route'                   => Route::class,
         'validate'                => Validate::class,
-        'filesystem'              => Filesystem::class,
+        'middleware'              => Middleware::class,
+        'annotation'              => Annotation::class,
+
         'think\DbManager'         => Db::class,
         'think\LogManager'        => Log::class,
         'think\CacheManager'      => Cache::class,
@@ -235,19 +238,16 @@ class App extends Container
      * 设置响应格式
      * @param string $name
      * @return $this
-     * @author Peter.Zhang
      */
     public function setResponse(string $name)
     {
         $this->response = $name;
-
         return $this;
     }
 
     /**
      * 获取响应格式
      * @return string
-     * @author Peter.Zhang
      */
     public function response(): string
     {
@@ -417,6 +417,17 @@ class App extends Container
     }
 
     /**
+     * 获取单个配置文件
+     * @param string $name
+     * @return array
+     */
+    public function getReadsConfig(string $name)
+    {
+        $file = $this->getConfigPath() . $name . $this->configExt;
+        return $this->config->load($file, '', false);
+    }
+
+    /**
      * 初始化应用
      * @access public
      * @return $this
@@ -435,7 +446,11 @@ class App extends Container
 
         $this->configExt = $this->env->get('config_ext', '.php');
 
-        $this->debugModeInit();
+        // 应用调试模式
+        if (!$this->appDebug) {
+            $this->appDebug = $this->env->get('app_debug') ? true : false;
+            ini_set('display_errors', 'Off');
+        }
 
         // 加载全局初始化文件
         $this->load();
@@ -460,6 +475,29 @@ class App extends Container
     public function initialized()
     {
         return $this->initialized;
+    }
+
+    /**
+     * 加载语言包
+     * @param string $langset 语言
+     * @return void
+     */
+    public function loadLangPack($langset)
+    {
+        if (empty($langset)) {
+            return;
+        }
+
+        // 加载应用语言包
+        // 格式：zh-cn.php/zh-cn.default.php
+        $files = glob($this->appPath . 'lang' . DIRECTORY_SEPARATOR . $langset . '.*');
+        $this->lang->load($files);
+
+        // 加载扩展（自定义）语言包
+        $list = $this->lang->config('extend_list', []);
+        if (isset($list[$langset])) {
+            $this->lang->load($list[$langset]);
+        }
     }
 
     /**
@@ -491,14 +529,16 @@ class App extends Container
 
         $configPath = $this->getConfigPath();
 
-        $files = [];
-
+        // 加载初始化配置
         if (is_dir($configPath)) {
-            $files = glob($configPath . '*' . $this->configExt);
-        }
+            $files = [
+                $configPath . 'app' . $this->configExt,
+                $configPath . 'database' . $this->configExt,
+            ];
 
-        foreach ($files as $file) {
-            $this->config->load($file, pathinfo($file, PATHINFO_FILENAME));
+            foreach ($files as $file) {
+                $this->config->load($file, pathinfo($file, PATHINFO_FILENAME), true);
+            }
         }
 
         if (is_file($appPath . 'event.php')) {
@@ -509,31 +549,6 @@ class App extends Container
             $services = include $appPath . 'service.php';
             foreach ($services as $service) {
                 $this->register($service);
-            }
-        }
-    }
-
-    /**
-     * 调试模式设置
-     * @access protected
-     * @return void
-     */
-    protected function debugModeInit(): void
-    {
-        // 应用调试模式
-        if (!$this->appDebug) {
-            $this->appDebug = $this->env->get('app_debug') ? true : false;
-            ini_set('display_errors', 'Off');
-        }
-
-        if (!$this->runningInConsole()) {
-            //重新申请一块比较大的buffer
-            if (ob_get_level() > 0) {
-                $output = ob_get_clean();
-            }
-            ob_start();
-            if (!empty($output)) {
-                echo $output;
             }
         }
     }
