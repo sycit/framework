@@ -42,7 +42,7 @@ use think\initializer\RegisterService;
  */
 class App extends Container
 {
-    const VERSION = '1.1.0';
+    const VERSION = '1.1.1';
 
     /**
      * 应用调试模式
@@ -607,6 +607,6 @@ class App extends Container
      */
     protected function getDefaultRootPath(): string
     {
-        return dirname(dirname(dirname(dirname($this->thinkPath)))) . DIRECTORY_SEPARATOR;
+        return dirname($this->thinkPath) . DIRECTORY_SEPARATOR;
     }
 }

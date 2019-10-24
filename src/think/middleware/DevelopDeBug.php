@@ -83,14 +83,11 @@ class DevelopDebug
     public function traceDebug(Response $response, &$data)
     {
         $config = $this->config;
-        $type   = !empty($config['type']) ? $config['type'] : 'Json';
+        $type   = !empty($config['type']) ? $config['type'] : '\\think\\debug\\Json';
 
         unset($config['type']);
 
-        // 命名空间
-        $namespace  = false !== strpos($type, '\\') ? $type : '\\think\\debug\\';
-
-        $trace = App::factory($type, $namespace, $config);
+        $trace = App::factory($type, '', $config);
 
         $log  = $this->app->log->getLog($config['channel'] ?? '');
         $log  = array_merge_recursive($this->log, $log);

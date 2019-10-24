@@ -140,8 +140,9 @@ class Dispatch
     /**
      * 判断Input参数
      * @param array $input
+     * @return void
      */
-    protected function hasInput(array $input)
+    protected function hasInput(array $input): void
     {
         foreach ($input as $item => $value) {
             $param = $this->request->data($item);
@@ -155,7 +156,7 @@ class Dispatch
                 throw new InvalidArgumentException($item);
             }
 
-            // 判断格式
+            // 判断有效格式 支持自定 'ctype_' 开头函数
             if (isset($value['type']) && !$this->app->validate->is($param, $value['type'])) {
                 throw new InvalidArgumentException($item);
             }
@@ -163,11 +164,6 @@ class Dispatch
             // 判断长度
             if (isset($value['length']) && !$this->app->validate->length($param, $value['length'])) {
                 throw new InvalidArgumentException($item);
-            }
-
-            // 过滤
-            if (isset($value['filter'])) {
-                $this->request->filterValue($param, $item, $value['filter']);
             }
 
             $this->param[$item] = $param;

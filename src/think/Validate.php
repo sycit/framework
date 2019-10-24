@@ -143,6 +143,10 @@ class Validate
                 // 是否为数组
                 $result = is_array($value);
                 break;
+            case 'string':
+                // 是否为字符串
+                $result = is_string($value);
+                break;
             default:
                 if (isset($this->type[$rule])) {
                     // 注册的验证规则
