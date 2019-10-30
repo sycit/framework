@@ -1,29 +1,30 @@
 <?php
 // +----------------------------------------------------------------------
-// | ThinkPHP [ WE CAN DO IT JUST THINK ]
+// | Copyright (c) 2019  http://www.sycit.cn
 // +----------------------------------------------------------------------
-// | Copyright (c) 2006~2019 http://thinkphp.cn All rights reserved.
+// | Author: Peter.Zhang  <hyzwd@outlook.com>
 // +----------------------------------------------------------------------
-// | Licensed ( http://www.apache.org/licenses/LICENSE-2.0 )
+// | Date:   2019/10/25
 // +----------------------------------------------------------------------
-// | Author: liu21st <liu21st@gmail.com>
+// | Title:  App.php
 // +----------------------------------------------------------------------
-declare (strict_types = 1);
+
+declare (strict_types=1);
 
 namespace think\facade;
 
 use think\Facade;
 
 /**
- * @see \think\App
+ * Class App
  * @package think\facade
+ * @see \think\App
  * @mixin \think\App
  */
 class App extends Facade
 {
     /**
      * 获取当前Facade对应类名（或者已经绑定的容器对象标识）
-     * @access protected
      * @return string
      */
     protected static function getFacadeClass()

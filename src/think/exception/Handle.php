@@ -35,8 +35,7 @@ class Handle
         ApiException::class,
         ResponseException::class,
         ModelNotFoundException::class,
-        DataNotFoundException::class,
-        InvalidArgumentException::class,
+        DataNotFoundException::class
     ];
 
     /**
@@ -67,22 +66,18 @@ class Handle
             $data = $this->getExceptionInfo($exception, 'report');
 
             // 收集异常数据
-            $data['file'] = $exception->getFile();
-            $data['line'] = $exception->getLine();
+            $file = $exception->getFile();
+            $line = $exception->getLine();
+            $ip   = $this->app->request->ip();
 
-            $log = "[{$data['status']}]{$data['message']}[{$data['file']}:{$data['line']}]";
+            $log = "{$ip};{$data['status']};{$data['message']};{$data['code']};{$file};{$line}";
 
-            if ($this->app->config->get('log.record_trace')) {
-                $log .= PHP_EOL . $exception->getTraceAsString();
-            }
-
-            $this->app->log->record($log, 'error');
+            $this->app->log->error($log);
         }
     }
 
     /**
      * 异常客户端输出
-     * @param $request
      * @param Throwable $exception
      * @return Response|\Exception
      */
@@ -98,39 +93,31 @@ class Handle
         $code = $data['code'];
 
         $response = Response::create('', $this->app->response());
-
-        if ($this->isDebug) {
-            $response->debug($data['debug']);
-        }
         $response->status((int)$data['status'])->message((string)$data['message']);
+
+        $this->isDebug && $response->debug($data['debug']);
 
         unset($data);
 
-        if ($exception instanceof ApiException) {
-            $response->header($exception->getHeaders());
-        }
+        $exception instanceof ApiException && $response->header($exception->getHeaders());
 
         return $response->code($code);
     }
 
     /**
      * 控制台输出
-     * @access public
      * @param  Output    $output
      * @param  Throwable $e
      */
     public function renderForConsole(Output $output, Throwable $e): void
     {
-        if ($this->isDebug) {
-            $output->setVerbosity(Output::VERBOSITY_DEBUG);
-        }
+        $this->isDebug && $output->setVerbosity(Output::VERBOSITY_DEBUG);
 
         $output->renderException($e);
     }
 
     /**
      * 判断不需要记录信息（日志）的异常类列表
-     * @access protected
      * @param Throwable $exception
      * @return bool
      */
@@ -156,14 +143,14 @@ class Handle
 
         if ($this->isDebug) {
             // 详细错误信息
-            $data['debug']   = [
-                'name'    => get_class($exception),
-                'file'    => $exception->getFile(),
-                'line'    => $exception->getLine(),
-                'trace'   => $exception->getTrace(),
-                'source'  => $this->getSourceCode($exception),
-                'datas'   => $this->getExtendData($exception),
-                'tables'  => [
+            $data['debug'] = [
+                'name'   => get_class($exception),
+                'file'   => $exception->getFile(),
+                'line'   => $exception->getLine(),
+                'trace'  => $exception->getTrace(),
+                'source' => $this->getSourceCode($exception),
+                'datas'  => $this->getExtendData($exception),
+                'tables' => [
                     'GET Data'              => $_GET,
                     'POST Data'             => $_POST,
                     'Files'                 => $_FILES,
@@ -174,8 +161,6 @@ class Handle
                     'ThinkPMS Constants'    => $this->getConst(),
                 ],
             ];
-        } else {
-            $data['debug'] = '';
         }
 
         return $data;
@@ -184,7 +169,6 @@ class Handle
     /**
      * 获取错误编码
      * ErrorException则使用错误级别作为错误编码
-     * @access protected
      * @param  Throwable $exception
      * @param  string    $name
      * @return array
@@ -199,28 +183,24 @@ class Handle
 
         switch (true) {
             case $exception instanceof ErrorException:
-                $code      = $exception->getCode();
-                $status    = $exception->getSeverity();
-                $rendermsg = $this->isDebug ? $message : 'System Exception';
-                break;
             case $exception instanceof ServerException:
                 $code      = $exception->getCode();
-                $status    = $exception->getApiCode();
+                $status    = $exception->getStatus();
                 $rendermsg = $this->isDebug ? $message : 'System Exception';
                 break;
             case $exception instanceof ApiException:
                 $code      = $exception->getCode();
-                $status    = $exception->getApiCode();
+                $status    = $exception->getStatus();
                 $rendermsg = $this->isDebug ? $message : (0 === $status || empty($message) ? '' : $message);
                 break;
             case $exception instanceof InvalidArgumentException:
                 $code      = $exception->getCode();
-                $status    = $exception->getApiCode();
+                $status    = $exception->getStatus();
                 $rendermsg = $this->isDebug ? $message : 'Invalid Argument';
                 break;
             default:
-                $code      = 500;
-                $status    = 50000;
+                $code      = $exception->getCode() ?? 500;
+                $status    = $exception->getStatus() ?? 5000;
                 $rendermsg = $this->isDebug ? $message : 'System Exception';
                 break;
         }
@@ -237,7 +217,6 @@ class Handle
     /**
      * 获取出错文件内容
      * 获取错误的前9行和后9行
-     * @access protected
      * @param  Throwable $exception
      * @return array                 错误文件内容
      */
@@ -263,7 +242,6 @@ class Handle
     /**
      * 获取异常扩展信息
      * 用于非调试模式html返回类型显示
-     * @access protected
      * @param Throwable $exception
      * @return array                 异常类定义的扩展数据
      */
@@ -271,9 +249,7 @@ class Handle
     {
         $data = [];
 
-        if ($exception instanceof Exception) {
-            $data = $exception->getData();
-        }
+        $exception instanceof Exception && $data = $exception->getData();
 
         return $data;
     }

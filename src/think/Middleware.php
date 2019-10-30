@@ -14,9 +14,8 @@ declare (strict_types = 1);
 namespace think;
 
 use Closure;
-use think\exception\InvalidArgumentException;
-use LogicException;
 use think\exception\Handle;
+use think\exception\ServerException;
 use Throwable;
 
 /**
@@ -129,7 +128,7 @@ class Middleware
                     $response = call_user_func($call, $request, $next, $param);
 
                     if (!$response instanceof Response) {
-                        throw new LogicException('The middleware must return Response instance');
+                        throw new ServerException(5010,'The middleware must return Response instance');
                     }
                     return $response;
                 };
@@ -192,7 +191,7 @@ class Middleware
         }
 
         if (!is_string($middleware)) {
-            throw new InvalidArgumentException('The middleware is invalid');
+            throw new ServerException(5011,'The middleware is invalid');
         }
 
         //中间件别名检查

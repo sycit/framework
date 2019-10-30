@@ -125,8 +125,8 @@ class Annotation
 
             $classDoc = ['class' => $classDoc];
         } catch (ReflectionException $e) {
-            $message = is_object($reflect) ? ($reflect->name ?? __CLASS__.'::'.__FUNCTION__) : $reflect;
-            throw new InvalidArgumentException($message);
+            $message = is_object($reflect) ? ($reflect->name ?? 'Noncharacterizable') : $reflect;
+            throw new InvalidArgumentException(5023, 'namespace not exists: ' . $message, $e);
         }
 
         if (!is_null($method) && isset($methodDoc[$method])) {
@@ -183,7 +183,7 @@ class Annotation
 
     /**
      * 解释Input参数
-     * name=数据名称,type=参数类型,desc=说明,length=长度,default=默认值,filter=过滤规则
+     * name=数据名称,type=参数类型,desc=说明,length=长度,default=默认值
      * @param string $str
      * @return array
      */

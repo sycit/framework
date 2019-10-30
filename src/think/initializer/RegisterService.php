@@ -15,6 +15,7 @@ namespace think\initializer;
 
 use think\App;
 use think\service\ModelService;
+use think\service\SeasLogService;
 
 /**
  * 注册系统服务
@@ -23,7 +24,10 @@ use think\service\ModelService;
  */
 class RegisterService
 {
-    protected $services = [ModelService::class];
+    protected $services = [
+        SeasLogService::class,
+        ModelService::class,
+    ];
 
     public function init(App $app)
     {

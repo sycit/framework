@@ -14,8 +14,8 @@ declare (strict_types = 1);
 namespace think;
 
 use Closure;
-use think\exception\ApiException;
 use think\exception\Handle;
+use think\exception\InvalidArgumentException;
 use Throwable;
 
 /**
@@ -210,9 +210,8 @@ class Http
      */
     protected function loadMiddleware(): void
     {
-
         if (is_file($this->app->getBasePath() . 'middleware.php')) {
-            $this->app->middleware->import(include $this->app->getBasePath() . 'middleware.php');
+            $this->app->middleware->import(include sprintf("%smiddleware.php", $this->app->getBasePath()));
         }
     }
 
@@ -315,7 +314,7 @@ class Http
                         $appName = $map[$name];
                     }
                 } elseif ($name && (false !== array_search($name, $map) || in_array($name, $deny))) {
-                    throw new ApiException(404, 'app not exists:' . $name, null, [], 404);
+                    throw new InvalidArgumentException(5020, 'app not exists:' . $name, null,404);
                 } elseif ($name && isset($map['*'])) {
                     $appName = $map['*'];
                 } else {
@@ -343,10 +342,13 @@ class Http
         $this->name = $appName;
         $this->app->request->setApp($appName);
         $this->app->setAppPath($this->path ?: $this->app->getBasePath() . $appName . DIRECTORY_SEPARATOR);
-        $this->app->setRuntimePath($this->app->getRootPath() . 'runtime' . DIRECTORY_SEPARATOR . $appName . DIRECTORY_SEPARATOR);
+        $this->app->setRuntimePath($this->app->getRootPath() . 'runtime' . DIRECTORY_SEPARATOR);
 
         // 设置应用命名空间
-        $this->app->setNamespace($this->app->config->get('app.app_namespace') ?: 'app\\' . $appName);
+        $this->app->setNamespace('app\\' . $appName);
+
+        // 设置日志模块
+        $this->app->log->module($appName);
 
         //加载应用
         $this->loadApp($appName);
@@ -364,7 +366,7 @@ class Http
             $appPath = $this->app->getAppPath();
 
             if (is_file($appPath . 'common.php')) {
-                include_once $appPath . 'common.php';
+                include_once sprintf("%scommon.php", $appPath);
             }
 
             $configPath = $this->app->getConfigPath();
@@ -382,15 +384,15 @@ class Http
             }
 
             if (is_file($appPath . 'event.php')) {
-                $this->app->loadEvent(include $appPath . 'event.php');
+                $this->app->loadEvent(include sprintf("%sevent.php", $appPath));
             }
 
             if (is_file($appPath . 'middleware.php')) {
-                $this->app->middleware->import(include $appPath . 'middleware.php');
+                $this->app->middleware->import(include sprintf("%smiddleware.php", $appPath));
             }
 
             if (is_file($appPath . 'provider.php')) {
-                $this->app->bind(include $appPath . 'provider.php');
+                $this->app->bind(include sprintf("%sprovider.php", $appPath));
             }
         }
     }

@@ -42,7 +42,7 @@ use think\initializer\RegisterService;
  */
 class App extends Container
 {
-    const VERSION = '1.1.1';
+    const VERSION = '1.1.2';
 
     /**
      * 应用调试模式
@@ -149,8 +149,8 @@ class App extends Container
         'annotation'              => Annotation::class,
 
         'think\DbManager'         => Db::class,
-        'think\LogManager'        => Log::class,
-        'think\CacheManager'      => Cache::class,
+        //'think\LogManager'        => Log::class,
+        //'think\CacheManager'      => Cache::class,
 
         // 接口依赖注入
         'Psr\Log\LoggerInterface' => Log::class,
@@ -169,7 +169,7 @@ class App extends Container
         $this->runtimePath = $this->rootPath . 'runtime' . DIRECTORY_SEPARATOR;
 
         if (is_file($this->appPath . 'provider.php')) {
-            $this->bind(include $this->appPath . 'provider.php');
+            $this->bind(include sprintf("%sprovider.php", $this->appPath));
         }
 
         static::setInstance($this);
@@ -183,7 +183,7 @@ class App extends Container
      * @access public
      * @param Service|string $service 服务
      * @param bool           $force   强制重新注册
-     * @return Service|null
+     * @return Service|void
      */
     public function register($service, bool $force = false)
     {
@@ -212,7 +212,7 @@ class App extends Container
      * 执行服务
      * @access public
      * @param Service $service 服务
-     * @return mixed
+     * @return void
      */
     public function bootService($service)
     {
@@ -522,10 +522,10 @@ class App extends Container
         $appPath = $this->getAppPath();
 
         if (is_file($appPath . 'common.php')) {
-            include_once $appPath . 'common.php';
+            include_once sprintf("%scommon.php", $appPath);
         }
 
-        include_once $this->thinkPath . 'helper.php';
+        include_once sprintf("%shelper.php", $this->thinkPath);
 
         $configPath = $this->getConfigPath();
 
@@ -542,11 +542,11 @@ class App extends Container
         }
 
         if (is_file($appPath . 'event.php')) {
-            $this->loadEvent(include $appPath . 'event.php');
+            $this->loadEvent(include sprintf("%sevent.php", $appPath));
         }
 
         if (is_file($appPath . 'service.php')) {
-            $services = include $appPath . 'service.php';
+            $services = include sprintf("%sservice.php", $appPath);
             foreach ($services as $service) {
                 $this->register($service);
             }

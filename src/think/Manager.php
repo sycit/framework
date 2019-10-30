@@ -13,7 +13,7 @@ declare (strict_types = 1);
 
 namespace think;
 
-use think\exception\InvalidArgumentException;
+use think\exception\ServerException;
 use think\helper\Str;
 
 /**
@@ -92,7 +92,7 @@ abstract class Manager
         $name = $name ?: $this->getDefaultDriver();
 
         if (is_null($name)) {
-            throw new InvalidArgumentException(sprintf(
+            throw new ServerException(5008,sprintf(
                 'Unable to resolve NULL driver for [%s].', static::class
             ));
         }
@@ -145,7 +145,7 @@ abstract class Manager
             }
         }
 
-        throw new InvalidArgumentException("Driver [$type] not supported.");
+        throw new ServerException(5009,"Driver [$type] not supported.");
     }
 
     /**

@@ -14,7 +14,7 @@ declare (strict_types = 1);
 namespace think;
 
 use Closure;
-use think\exception\ApiException;
+use think\exception\InvalidArgumentException;
 use think\middleware\CheckRequestCache;
 use think\route\Dispatch;
 use think\route\Domain;
@@ -228,7 +228,7 @@ class Route
         $controller = !empty($path) ? array_shift($path) : null;
 
         if ($controller && !preg_match('/^[A-Za-z][\w|.]*$/', $controller)) {
-            throw new ApiException(404, 'controller not exists:' . $controller);
+            throw new InvalidArgumentException(5021, 'controller not exists:' . $controller);
         }
 
         // 解析操作

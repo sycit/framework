@@ -13,18 +13,15 @@ declare (strict_types = 1);
 
 namespace think\route;
 
-use ReflectionClass;
 use ReflectionException;
 use ReflectionMethod;
 use think\App;
 use think\exception\InvalidArgumentException;
-use think\exception\ServerException;
 use think\exception\ApiException;
 use think\helper\Str;
 use think\Request;
 use think\Response;
 use think\Route;
-use think\Validate;
 
 /**
  * 路由调度管理类
@@ -91,7 +88,7 @@ class Dispatch
             $this->dispatch($this->dispatch);
             // 判断绑定的应用
             if ($this->hasDefinedBindDomain()) {
-                throw new ApiException(404, 'invalid request: ' . $this->request->app());
+                throw new InvalidArgumentException(5022, 'invalid request: ' . $this->request->app());
             }
         }
 
@@ -153,17 +150,17 @@ class Dispatch
             }
 
             if (is_null($param)) {
-                throw new InvalidArgumentException($item);
+                throw new ApiException(4003,'invalid argument: ' . $item);
             }
 
             // 判断有效格式 支持自定 'ctype_' 开头函数
             if (isset($value['type']) && !$this->app->validate->is($param, $value['type'])) {
-                throw new InvalidArgumentException($item);
+                throw new ApiException(4003,'invalid argument: ' . $item);
             }
 
             // 判断长度
             if (isset($value['length']) && !$this->app->validate->length($param, $value['length'])) {
-                throw new InvalidArgumentException($item);
+                throw new ApiException(4003,'invalid argument: ' . $item);
             }
 
             $this->param[$item] = $param;
@@ -172,14 +169,14 @@ class Dispatch
 
     /**
      * 判断URL请求方法
-     * @param string $name
-     * @param string $value
+     * @param string $name  操作名
+     * @param string $value 请求值
      * @return void
      */
     protected function hasMethod(string $name, string $value): void
     {
         $method = $this->request->method();
-        $rest   = $this->app->config->get('app.route_rest_action');
+        $rest   = $this->app->config->get('app.route_rest_action', []);
 
         if (isset($rest[$name])) {
             $rest   = Str::upper($rest[$name]);
@@ -194,7 +191,7 @@ class Dispatch
         }
 
         if (false === $result) {
-            throw new ApiException(403,'request method error',null, [], 404);
+            throw new ApiException(4003,'request method error');
         }
 
         // 设置请求方法
@@ -281,12 +278,17 @@ class Dispatch
 
         return $this->app->middleware->pipeline('controller')->send($this->request)
             ->then(function () use ($instance, $action) {
-                $vars    = $this->request->get();
-                $reflect = new ReflectionMethod($instance, $action);
-                // 设置当前请求的操作方法名
-                $this->request->setAction($reflect->getName());
-                // 执行类的方法
-                $data = $this->app->invokeReflectMethod($instance, $reflect, $vars);
+                try {
+                    $reflect = new ReflectionMethod($instance, $action);
+                    $vars    = $this->request->get();
+                    // 设置当前请求的操作方法名
+                    $this->request->setAction($reflect->getName());
+                    // 执行类的方法
+                    $data = $this->app->invokeReflectMethod($instance, $reflect, $vars);
+                } catch (ReflectionException $e) {
+                    throw new InvalidArgumentException(5024, 'method not exists: ' . $action, $e);
+                }
+
                 return $this->autoResponse($data);
             });
     }

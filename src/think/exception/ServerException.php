@@ -13,36 +13,31 @@ declare (strict_types = 1);
 
 namespace think\exception;
 
-use Psr\Container\NotFoundExceptionInterface;
-use RuntimeException;
-use Throwable;
-
 /**
- * Class ServerException 服务器异常
+ * 服务器异常
+ * Class ServerException
  * @package think\exception
  */
-class ServerException extends RuntimeException implements NotFoundExceptionInterface
+class ServerException extends \RuntimeException
 {
     /**
      * API编码
-     * @var string|int
+     * @var int
      */
-    private $apiCode;
+    private $status;
 
-    public function __construct($apiCode, string $message = null, Throwable $previous = null, int $httpCode = 0)
+    public function __construct(int $status, string $message = null, \Throwable $previous = null, int $code = 500)
     {
-        $this->message = $message;
-        $this->apiCode = $apiCode;
-
-        parent::__construct($message, $httpCode, $previous);
+        $this->status  = $status;
+        parent::__construct($message, $code, $previous);
     }
 
     /**
      * 获取API状态码
-     * @return string
+     * @return int
      */
-    public function getApiCode()
+    public function getStatus()
     {
-        return $this->apiCode;
+        return $this->status;
     }
 }

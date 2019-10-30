@@ -4,7 +4,7 @@
 // +----------------------------------------------------------------------
 // | Author: Peter.Zhang  <hyzwd@outlook.com>
 // +----------------------------------------------------------------------
-// | Date:   2019/10/24
+// | Date:   2019/9/19
 // +----------------------------------------------------------------------
 // | Title:  DevelopDebug.php
 // +----------------------------------------------------------------------
@@ -15,7 +15,6 @@ namespace think\middleware;
 
 use Closure;
 use think\App;
-use think\Config;
 use think\event\LogWrite;
 use think\Request;
 use think\Response;
@@ -89,7 +88,7 @@ class DevelopDebug
 
         $trace = App::factory($type, '', $config);
 
-        $log  = $this->app->log->getLog($config['channel'] ?? '');
+        $log  = $this->app->log->getLog();
         $log  = array_merge_recursive($this->log, $log);
         $data = $trace->output($this->app, $response, $log);
     }

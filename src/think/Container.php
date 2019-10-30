@@ -17,7 +17,6 @@ use ArrayAccess;
 use ArrayIterator;
 use Closure;
 use Countable;
-use InvalidArgumentException;
 use IteratorAggregate;
 use Psr\Container\ContainerInterface;
 use ReflectionClass;
@@ -258,7 +257,7 @@ class Container implements ContainerInterface, ArrayAccess, IteratorAggregate, C
             } elseif ($param->isDefaultValueAvailable()) {
                 $args[] = $param->getDefaultValue();
             } else {
-                throw new InvalidArgumentException(__CLASS__ . '::' . __FUNCTION__ . ' -> ' . $name);
+                throw new ServerException(5006,'method param miss:' . $name);
             }
         }
 
@@ -314,7 +313,7 @@ class Container implements ContainerInterface, ArrayAccess, IteratorAggregate, C
             } else {
                 $function .= '()';
             }
-            throw new ServerException(5000,__CLASS__ . '::' . __FUNCTION__ . ' -> ' . $function, $e);
+            throw new ServerException(5001,'function not exists: ' . $function, $e);
         }
     }
 
@@ -352,7 +351,7 @@ class Container implements ContainerInterface, ArrayAccess, IteratorAggregate, C
                 $callback = $method;
             }
 
-            throw new ServerException(5001,__CLASS__ . '::' . __FUNCTION__ . ' -> ' . $callback . '()', $e);
+            throw new ServerException(5002,'method not exists: ' . $callback . '()', $e);
         }
     }
 
@@ -420,7 +419,7 @@ class Container implements ContainerInterface, ArrayAccess, IteratorAggregate, C
 
             return $object;
         } catch (ReflectionException $e) {
-            throw new ServerException(5002,__CLASS__ . '::' . __FUNCTION__ . ' -> ' . $class, $e);
+            throw new ServerException(5003,'class not exists: ' . $class, $e);
         }
     }
 
@@ -463,7 +462,7 @@ class Container implements ContainerInterface, ArrayAccess, IteratorAggregate, C
             return Container::getInstance()->invokeClass($class, $args);
         }
 
-        throw new ServerException(5003,__CLASS__ . '::' . __FUNCTION__ . ' -> ' . $class);
+        throw new ServerException(5004,'class not exists:' . $class);
     }
 
     /**
@@ -490,7 +489,7 @@ class Container implements ContainerInterface, ArrayAccess, IteratorAggregate, C
             return $this->make($abstract);
         }
 
-        throw new ServerException(5004,__CLASS__ . '::' . __FUNCTION__ . ' -> ' . $abstract);
+        throw new ServerException(5005,'class not exists: ' . $abstract);
     }
 
     /**

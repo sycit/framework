@@ -234,7 +234,7 @@ class Event
                     }
                 }
             } catch (ReflectionException $e) {
-                throw new ServerException(404, 'event observe error', $e, 500);
+                throw new ServerException(5007, 'event observe error', $e);
             }
         }
 

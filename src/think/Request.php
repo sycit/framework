@@ -13,7 +13,7 @@ declare (strict_types = 1);
 
 namespace think;
 
-use think\exception\InvalidArgumentException;
+use think\exception\ApiException;
 
 /**
  * 请求管理类
@@ -809,8 +809,6 @@ class Request
             return true;
         } elseif ('https' == $this->server('HTTP_X_FORWARDED_PROTO')) {
             return true;
-        } elseif ($this->httpsAgentName && $this->server($this->httpsAgentName)) {
-            return true;
         }
 
         return false;
@@ -1055,7 +1053,7 @@ class Request
     protected function handleParam($name, $default)
     {
         if (false === $default) {
-            throw new InvalidArgumentException($name, 4004);
+            throw new ApiException(4003, 'invalid argument:' . $name);
         }
 
         return $default;

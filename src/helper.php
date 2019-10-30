@@ -20,23 +20,24 @@ use think\Container;
 use think\exception\ApiException;
 use think\exception\ResponseException;
 use think\facade\Lang;
+use think\facade\Log;
 use think\Response;
 
 if (!function_exists('abort')) {
     /**
      * 抛出HTTP异常
-     * @param integer|Response $statusCode    错误码 或者 Response对象实例
+     * @param integer|Response $status    错误码 或者 Response对象实例
      * @param string           $message 错误信息
      * @param array            $header  参数
      * @param int              $code    HTTP状态码
      */
-    function abort($statusCode, string $message = null, array $header = [], int $code = 200)
+    function abort($status, string $message = null, array $header = [], int $code = 200)
     {
-        if ($statusCode instanceof Response) {
-            throw new ResponseException($statusCode);
-        } else {
-            throw new ApiException($statusCode, $message, null, $header, $code);
+        if ($status instanceof Response) {
+            throw new ResponseException($status);
         }
+
+        throw new ApiException($status, $message, $header, $code);
     }
 }
 
@@ -105,5 +106,39 @@ if (!function_exists('parse_name')) {
         }
 
         return strtolower(trim(preg_replace("/[A-Z]/", "_\\0", $name), "_"));
+    }
+}
+
+if (!function_exists('response')) {
+    /**
+     * 创建普通 Response 对象实例
+     * @param mixed      $data   输出数据
+     * @param int|string $code   状态码
+     * @param array      $header 头信息
+     * @param string     $type
+     * @return Response
+     */
+    function response($data = '', $code = 200, $header = [], $type = ''): Response
+    {
+        return Response::create($data, $type, $code)->header($header);
+    }
+}
+
+if (!function_exists('log')) {
+    /**
+     * 记录日志信息
+     * @param mixed  $log      log信息 支持字符串和数组
+     * @param string $level   日志级别
+     * @param array  $content 替换内容
+     * @param string $module  日志模块
+     * @return array|void
+     */
+    function log($log = '', string $level = 'LOG', array $content = [], string $module = '')
+    {
+        if ('' === $log) {
+            return Log::getLog();
+        }
+
+        Log::record($log, $level, $content, $module);
     }
 }

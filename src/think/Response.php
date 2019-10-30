@@ -224,7 +224,6 @@ class Response
     /**
      * 发送数据到客户端
      * @return void
-     * @throws \InvalidArgumentException
      */
     public function send(): void
     {
@@ -251,22 +250,19 @@ class Response
     }
 
     /**
-     * 处理数据
+     * 处理数据 可重载输出格式
      * @param  mixed $data 要处理的数据
      * @return mixed
      */
     protected function output($data)
     {
-        $result['status']  = $this->status;
+        $result['status'] = $this->status;
 
-        $this->message && $result['message'] = $this->getMessageLang($this->message);
-        if ($this->code === 200) {
-            $result['data'] = is_array($data) && empty($data) ? (object)$data : $data;
-        }
+        !empty($this->message) && $result['message'] = $this->getMessageLang($this->message);
 
-        if (!empty($this->debug)) {
-            $result['debug'] = $this->debug;
-        }
+        $this->code === 200 && $result['data'] = is_array($data) && empty($data) ? (object)$data : $data;
+
+        !empty($this->debug) && $result['debug'] = $this->debug;
 
         return json_encode((object)$result, $this->options['json_encode_param']);
     }

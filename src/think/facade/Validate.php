@@ -1,34 +1,30 @@
 <?php
 // +----------------------------------------------------------------------
-// | ThinkPHP [ WE CAN DO IT JUST THINK ]
+// | Copyright (c) 2019  http://www.sycit.cn
 // +----------------------------------------------------------------------
-// | Copyright (c) 2006~2019 http://thinkphp.cn All rights reserved.
+// | Author: Peter.Zhang  <hyzwd@outlook.com>
 // +----------------------------------------------------------------------
-// | Licensed ( http://www.apache.org/licenses/LICENSE-2.0 )
+// | Date:   2019/10/25
 // +----------------------------------------------------------------------
-// | Author: liu21st <liu21st@gmail.com>
+// | Title:  Validate.php
 // +----------------------------------------------------------------------
+
+declare (strict_types=1);
 
 namespace think\facade;
 
 use think\Facade;
 
 /**
- * @see \think\Validate
+ * Class Validate
  * @package think\facade
+ * @see \think\Validate
  * @mixin \think\Validate
  */
 class Validate extends Facade
 {
     /**
-     * 始终创建新的对象实例
-     * @var bool
-     */
-    protected static $alwaysNewInstance = true;
-
-    /**
      * 获取当前Facade对应类名（或者已经绑定的容器对象标识）
-     * @access protected
      * @return string
      */
     protected static function getFacadeClass()

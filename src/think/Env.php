@@ -173,7 +173,7 @@ class Env implements ArrayAccess
 
     public function offsetUnset($name)
     {
-        throw new Exception('not support: unset');
+        throw new Exception('not support: unset', 5006);
     }
 
     public function offsetGet($name)

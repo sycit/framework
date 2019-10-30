@@ -18,22 +18,22 @@ namespace think\exception;
  * Class InvalidArgumentException
  * @package think\exception
  */
-class InvalidArgumentException extends \InvalidArgumentException
+class InvalidArgumentException extends \RuntimeException
 {
     /**
      * API编码
-     * @var integer
+     * @var int
      */
-    private $apiCode = 0;
+    private $status;
 
-    public function __construct(string $message, $apiCode = 4000)
+    public function __construct(int $status, string $message = null, \Exception $previous = null, int $code = 200)
     {
-        $this->apiCode = $apiCode;
-        parent::__construct('invalid argument: ' . $message,200);
+        $this->status = $status;
+        parent::__construct($message, $code, $previous);
     }
 
-    public function getApiCode()
+    public function getStatus()
     {
-        return $this->apiCode;
+        return $this->status;
     }
 }

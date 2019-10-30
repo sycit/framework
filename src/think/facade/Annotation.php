@@ -4,37 +4,31 @@
 // +----------------------------------------------------------------------
 // | Author: Peter.Zhang  <hyzwd@outlook.com>
 // +----------------------------------------------------------------------
-// | Date:   2019/9/18
+// | Date:   2019/10/25
 // +----------------------------------------------------------------------
-// | Title:  ChannelSet.php
+// | Title:  Annotation.php
 // +----------------------------------------------------------------------
 
 declare (strict_types = 1);
 
-namespace think\log;
+namespace think\facade;
 
-use think\Log;
+use think\Facade;
 
 /**
- * Class ChannelSet
- * @package think\log
- * @mixin Channel
+ * Class Annotation
+ * @package think\facade
+ * @see \think\Annotation
+ * @mixin \think\Annotation
  */
-class ChannelSet
+class Annotation extends Facade
 {
-    protected $log;
-    protected $channels;
-
-    public function __construct(Log $log, array $channels)
+    /**
+     * 获取当前Facade对应类名（或者已经绑定的容器对象标识）
+     * @return string
+     */
+    protected static function getFacadeClass()
     {
-        $this->log      = $log;
-        $this->channels = $channels;
-    }
-
-    public function __call($method, $arguments)
-    {
-        foreach ($this->channels as $channel) {
-            $this->log->channel($channel)->{$method}(...$arguments);
-        }
+        return 'annotation';
     }
 }
